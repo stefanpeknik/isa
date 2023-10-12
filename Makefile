@@ -1,40 +1,57 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -Wall -Wextra -std=c++11
 
 # Directories
 SRC_DIR = src
 COMMON_DIR = $(SRC_DIR)/common
-TFTP_CLIENT_DIR = $(SRC_DIR)/tftp-client
-TFTP_SERVER_DIR = $(SRC_DIR)/tftp-server
+CLIENT_DIR = $(SRC_DIR)/tftp-client
+SERVER_DIR = $(SRC_DIR)/tftp-server
+OBJ_DIR = obj
 
 # Source files
-COMMON_SRC = $(wildcard $(COMMON_DIR)/*.cpp)
-TFTP_CLIENT_SRC = $(wildcard $(TFTP_CLIENT_DIR)/*.cpp)
-TFTP_SERVER_SRC = $(wildcard $(TFTP_SERVER_DIR)/*.cpp)
+COMMON_SRCS = $(wildcard $(COMMON_DIR)/*.cpp)
+CLIENT_SRCS = $(wildcard $(CLIENT_DIR)/*.cpp) $(COMMON_SRCS)
+SERVER_SRCS = $(wildcard $(SERVER_DIR)/*.cpp) $(COMMON_SRCS)
 
 # Object files
-COMMON_OBJ = $(COMMON_SRC:.cpp=.o)
-TFTP_CLIENT_OBJ = $(TFTP_CLIENT_SRC:.cpp=.o)
-TFTP_SERVER_OBJ = $(TFTP_SERVER_SRC:.cpp=.o)
+COMMON_OBJS = $(patsubst $(COMMON_DIR)/%.cpp,$(OBJ_DIR)/common/%.o,$(COMMON_SRCS))
+CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJ_DIR)/tftp-client/%.o,$(CLIENT_SRCS))
+SERVER_OBJS = $(patsubst $(SERVER_DIR)/%.cpp,$(OBJ_DIR)/tftp-server/%.o,$(SERVER_SRCS))
 
 # Executables
-TFTP_CLIENT_EXEC = tftp-client
-TFTP_SERVER_EXEC = tftp-server
+CLIENT_EXEC = tftp-client
+SERVER_EXEC = tftp-server
 
 # Targets
-all: $(TFTP_CLIENT_EXEC) $(TFTP_SERVER_EXEC)
+all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
-$(TFTP_CLIENT_EXEC): $(COMMON_OBJ) $(TFTP_CLIENT_OBJ)
+$(CLIENT_EXEC): $(CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-$(TFTP_SERVER_EXEC): $(COMMON_OBJ) $(TFTP_SERVER_OBJ)
+$(SERVER_EXEC): $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-%.o: %.cpp
+# Compile source files to object files
+$(OBJ_DIR)/common/%.o: $(COMMON_DIR)/%.cpp | $(OBJ_DIR)/common
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+$(OBJ_DIR)/tftp-client/%.o: $(CLIENT_DIR)/%.cpp | $(OBJ_DIR)/tftp-client
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(OBJ_DIR)/tftp-server/%.o: $(SERVER_DIR)/%.cpp | $(OBJ_DIR)/tftp-server
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(OBJ_DIR)/common:
+	mkdir -p $@
+
+$(OBJ_DIR)/tftp-client:
+	mkdir -p $@
+
+$(OBJ_DIR)/tftp-server:
+	mkdir -p $@
+
 clean:
-	rm -f $(COMMON_OBJ) $(TFTP_CLIENT_OBJ) $(TFTP_SERVER_OBJ) $(TFTP_CLIENT_EXEC) $(TFTP_SERVER_EXEC)
+	rm -rf $(OBJ_DIR) $(CLIENT_EXEC) $(SERVER_EXEC)
 
 .PHONY: all clean

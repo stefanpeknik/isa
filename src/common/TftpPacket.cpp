@@ -1,8 +1,5 @@
 #include "TftpPacket.h"
 
-#include <sstream>
-#include <string>
-
 TftpPacket::TftpPacket(std::vector<uint8_t> opcode) {
   this->opcode = ParseOpcode(opcode);
 }

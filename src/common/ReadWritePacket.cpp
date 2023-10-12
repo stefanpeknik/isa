@@ -1,8 +1,5 @@
 #include "ReadWritePacket.h"
 
-#include <algorithm>
-#include <string>
-
 ReadWritePacket::ReadWritePacket(TftpPacket::Opcode opcode)
     : TftpPacket(opcode) {}
 

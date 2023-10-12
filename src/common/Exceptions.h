@@ -1,3 +1,6 @@
+#ifndef Exceptions_H
+#define Exceptions_H
+
 #include <exception>
 #include <string>
 
@@ -64,3 +67,5 @@ class TTFOptionNegotiationError : public TFTPException {
  public:
   TTFOptionNegotiationError() : TFTPException("Option negotiation failed.") {}
 };
+
+#endif  // Exceptions_H

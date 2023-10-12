@@ -1,7 +1,5 @@
 #include "OackPacket.h"
 
-#include "Exceptions.h"
-
 OackPacket::OackPacket() : TftpPacket(TftpPacket::Opcode::OACK) {}
 
 OackPacket::OackPacket(std::vector<uint8_t> raw)

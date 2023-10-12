@@ -1,2 +1,9 @@
 .vscode/
 docs/
+
+*.o
+
+tftp-server
+tftp-client
+!/src/tftp-server
+!/src/tftp-client
