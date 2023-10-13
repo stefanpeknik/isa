@@ -13,5 +13,10 @@ uint16_t AckPacket::ParseBlockNumber(std::vector<uint8_t> block_number) {
 }
 
 std::vector<uint8_t> AckPacket::MakeRaw() {
-  // TODO implement
+  std::vector<uint8_t> raw;
+  raw.push_back(0);
+  raw.push_back(static_cast<uint8_t>(this->opcode));
+  raw.push_back(static_cast<uint8_t>(this->block_number >> 8));
+  raw.push_back(static_cast<uint8_t>(this->block_number));
+  return raw;
 }

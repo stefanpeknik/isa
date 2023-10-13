@@ -1,8 +1,32 @@
-#ifndef Exceptions_H
-#define Exceptions_H
+#ifndef TftpPacket_H
+#define TftpPacket_H
 
-#include <exception>
+#include <map>
+#include <sstream>
 #include <string>
+#include <vector>
+
+class TftpPacket {
+ public:
+  enum class Opcode {
+    RRQ = 1,    // Read request
+    WRQ = 2,    // Write request
+    DATA = 3,   // Data packet
+    ACK = 4,    // Acknowledgment
+    ERROR = 5,  // Error packet
+    OACK = 6    // Options Acknowledgment
+  };
+
+  TftpPacket(Opcode opcode);
+  TftpPacket(std::vector<uint8_t> opcode);
+
+  Opcode opcode;
+  static Opcode ParseOpcode(std::vector<uint8_t> opcode);
+  static Opcode GetOpcodeFromRaw(std::vector<uint8_t> raw);
+  virtual std::vector<uint8_t> MakeRaw() = 0;
+};
+
+// Exception classes
 
 class TFTPException : public std::exception {
  public:
@@ -68,4 +92,4 @@ class TTFOptionNegotiationError : public TFTPException {
   TTFOptionNegotiationError() : TFTPException("Option negotiation failed.") {}
 };
 
-#endif  // Exceptions_H
+#endif  // TftpPacket_H

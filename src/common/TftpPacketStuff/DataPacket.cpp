@@ -22,5 +22,18 @@ std::vector<uint8_t> DataPacket::ParseData(std::vector<uint8_t> data) {
 }
 
 std::vector<uint8_t> DataPacket::MakeRaw() {
-  // TODO implement
+  std::vector<uint8_t> raw;
+
+  // Add opcode
+  raw.push_back(static_cast<uint8_t>(this->opcode) >> 8);
+  raw.push_back(static_cast<uint8_t>(this->opcode));
+
+  // Add block number
+  raw.push_back(this->block_number >> 8);
+  raw.push_back(this->block_number);
+
+  // Add data
+  raw.insert(raw.end(), this->data.begin(), this->data.end());
+
+  return raw;
 }

@@ -4,8 +4,8 @@
 #include <iostream>
 #include <string>
 
-#include "../common/Exceptions.h"
-#include "../common/TftpPacket.h"
+#include "../common/OptionStuff/Option.h"
+#include "../common/TftpPacketStuff/TftpPacket.h"
 
 class TftpClient {
  public:
@@ -17,14 +17,20 @@ class TftpClient {
     std::string filepath = "";
     std::string dest_filepath = "";
     TftpMode mode;
+    std::vector<Option> options = {};
   };
 
   TftpClient(TftpClientArgs args) : args_(args){};
+
+  
 
   void run();
 
  private:
   TftpClientArgs args_;
+
+  void Write();
+  void Read();
 };
 
 #endif  // TftpClient_H

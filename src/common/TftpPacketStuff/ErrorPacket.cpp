@@ -19,5 +19,21 @@ std::string ErrorPacket::ParseErrorMessage(std::vector<uint8_t> error_message) {
 }
 
 std::vector<uint8_t> ErrorPacket::MakeRaw() {
-  // TODO implement
+  std::vector<uint8_t> raw;
+
+  // Add opcode
+  raw.push_back(static_cast<uint8_t>(this->opcode) >> 8);
+  raw.push_back(static_cast<uint8_t>(this->opcode));
+
+  // Add error code
+  raw.push_back(this->error_code >> 8);
+  raw.push_back(this->error_code);
+
+  // Add error message
+  raw.insert(raw.end(), this->error_message.begin(), this->error_message.end());
+
+  // Add null terminator
+  raw.push_back(0);
+
+  return raw;
 }

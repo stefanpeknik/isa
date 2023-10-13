@@ -1,7 +1,7 @@
 #ifndef OackPacket_h
 #define OackPacket_h
 
-#include "Option.h"
+#include "../OptionStuff/Option.h"
 #include "TftpPacket.h"
 
 class OackPacket : public TftpPacket {

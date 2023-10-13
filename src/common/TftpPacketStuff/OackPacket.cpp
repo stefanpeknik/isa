@@ -47,10 +47,9 @@ std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {
 
     // Check if option name is already in parsed_options
     for (auto& option : parsed_options) {
-      if (option.GetName() == new_option.GetName()) {
+      if (option.name == new_option.name) {
         throw TFTPIllegalOperationError(
-            "TFTP Illegal Operation: duplicate option name " +
-            new_option.GetName());
+            "TFTP Illegal Operation: duplicate option name " + option_name);
       }
     }
 
@@ -70,5 +69,17 @@ std::string OackPacket::ParseOptionValue(std::vector<uint8_t> option_value) {
 }
 
 std::vector<uint8_t> OackPacket::MakeRaw() {
-  // TODO implement
+  std::vector<uint8_t> raw;
+
+  // Add opcode
+  raw.push_back(static_cast<uint8_t>(this->opcode) >> 8);
+  raw.push_back(static_cast<uint8_t>(this->opcode));
+
+  // Add options
+  for (auto& option : this->options) {
+    auto optionVec = option.MakeRaw();
+    raw.insert(raw.end(), optionVec.begin(), optionVec.end());
+  }
+
+  return raw;
 }
