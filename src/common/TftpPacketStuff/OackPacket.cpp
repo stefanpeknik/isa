@@ -1,6 +1,7 @@
 #include "OackPacket.h"
 
-OackPacket::OackPacket() : TftpPacket(TftpPacket::Opcode::OACK) {}
+OackPacket::OackPacket(std::vector<Option> options)
+    : TftpPacket(TftpPacket::Opcode::OACK), options(options) {}
 
 OackPacket::OackPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
@@ -22,7 +23,7 @@ std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option name not terminated with null byte");
     }
-    i++;  // Skip null byte
+    i++; // Skip null byte
 
     // Read option value
     std::string option_value;
@@ -34,7 +35,7 @@ std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option value not terminated with null byte");
     }
-    i++;  // Skip null byte
+    i++; // Skip null byte
 
     // Check if option value is missing
     if (option_value.empty()) {
@@ -46,7 +47,7 @@ std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {
     Option new_option(option_name, option_value);
 
     // Check if option name is already in parsed_options
-    for (auto& option : parsed_options) {
+    for (auto &option : parsed_options) {
       if (option.name == new_option.name) {
         throw TFTPIllegalOperationError(
             "TFTP Illegal Operation: duplicate option name " + option_name);
@@ -60,14 +61,6 @@ std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {
   return parsed_options;
 }
 
-std::string OackPacket::ParseOptionName(std::vector<uint8_t> option_name) {
-  return std::string(option_name.begin(), option_name.end());
-}
-
-std::string OackPacket::ParseOptionValue(std::vector<uint8_t> option_value) {
-  return std::string(option_value.begin(), option_value.end());
-}
-
 std::vector<uint8_t> OackPacket::MakeRaw() {
   std::vector<uint8_t> raw;
 
@@ -76,7 +69,7 @@ std::vector<uint8_t> OackPacket::MakeRaw() {
   raw.push_back(static_cast<uint8_t>(this->opcode));
 
   // Add options
-  for (auto& option : this->options) {
+  for (auto &option : this->options) {
     auto optionVec = option.MakeRaw();
     raw.insert(raw.end(), optionVec.begin(), optionVec.end());
   }

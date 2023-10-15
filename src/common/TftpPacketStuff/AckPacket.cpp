@@ -1,6 +1,7 @@
 #include "AckPacket.h"
 
-AckPacket::AckPacket() : TftpPacket(TftpPacket::Opcode::ACK) {}
+AckPacket::AckPacket(uint16_t block_number)
+    : TftpPacket(TftpPacket::Opcode::ACK), block_number(block_number) {}
 
 AckPacket::AckPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {

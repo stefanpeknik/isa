@@ -1,57 +1,31 @@
-# Compiler and flags
-CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++11
+CC = g++
+CFLAGS = -g -Wall -I./src/common
 
-# Directories
-SRC_DIR = src
-COMMON_DIR = $(SRC_DIR)/common
-CLIENT_DIR = $(SRC_DIR)/tftp-client
-SERVER_DIR = $(SRC_DIR)/tftp-server
-OBJ_DIR = obj
+CLIENT_SRC_DIR = ./src/tftp-client
+SERVER_SRC_DIR = ./src/tftp-server
+COMMON_SRC_DIR = ./src/common
 
-# Source files
-COMMON_SRCS = $(wildcard $(COMMON_DIR)/*.cpp)
-CLIENT_SRCS = $(wildcard $(CLIENT_DIR)/*.cpp) $(COMMON_SRCS)
-SERVER_SRCS = $(wildcard $(SERVER_DIR)/*.cpp) $(COMMON_SRCS)
+CLIENT_SRCS = $(wildcard $(CLIENT_SRC_DIR)/*.cpp) $(shell find $(COMMON_SRC_DIR) -type f -name '*.cpp')
+SERVER_SRCS = $(wildcard $(SERVER_SRC_DIR)/*.cpp) $(shell find $(COMMON_SRC_DIR) -type f -name '*.cpp')
 
-# Object files
-COMMON_OBJS = $(patsubst $(COMMON_DIR)/%.cpp,$(OBJ_DIR)/common/%.o,$(COMMON_SRCS))
-CLIENT_OBJS = $(patsubst $(CLIENT_DIR)/%.cpp,$(OBJ_DIR)/tftp-client/%.o,$(CLIENT_SRCS))
-SERVER_OBJS = $(patsubst $(SERVER_DIR)/%.cpp,$(OBJ_DIR)/tftp-server/%.o,$(SERVER_SRCS))
+CLIENT_OBJS = $(CLIENT_SRCS:.cpp=.o)
+SERVER_OBJS = $(SERVER_SRCS:.cpp=.o)
 
-# Executables
 CLIENT_EXEC = tftp-client
 SERVER_EXEC = tftp-server
 
-# Targets
 all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
 $(CLIENT_EXEC): $(CLIENT_OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(SERVER_EXEC): $(SERVER_OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-# Compile source files to object files
-$(OBJ_DIR)/common/%.o: $(COMMON_DIR)/%.cpp | $(OBJ_DIR)/common
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-$(OBJ_DIR)/tftp-client/%.o: $(CLIENT_DIR)/%.cpp | $(OBJ_DIR)/tftp-client
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-$(OBJ_DIR)/tftp-server/%.o: $(SERVER_DIR)/%.cpp | $(OBJ_DIR)/tftp-server
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-$(OBJ_DIR)/common:
-	mkdir -p $@
-
-$(OBJ_DIR)/tftp-client:
-	mkdir -p $@
-
-$(OBJ_DIR)/tftp-server:
-	mkdir -p $@
+%.o: %.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR) $(CLIENT_EXEC) $(SERVER_EXEC)
+	rm -f $(CLIENT_EXEC) $(SERVER_EXEC) $(CLIENT_OBJS) $(SERVER_OBJS)
 
 .PHONY: all clean

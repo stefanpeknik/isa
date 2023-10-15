@@ -6,23 +6,27 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <cstdint>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
 class UdpClient {
- public:
+public:
   UdpClient(std::string server_hostname, int port_number,
-            int16_t maxPacketSize = 2 + 2 + 512,
+            uint16_t maxPacketSize = 2 + 2 + 512,
             struct timeval timeout = {5, 0});
 
-  void Send(std::vector<int8_t> data);
-  std::vector<int8_t> Receive();
+  void Send(std::vector<uint8_t> data);
+  std::vector<uint8_t> ReceiveFromSpecific();
+  std::vector<uint8_t> ReceiveFromAny(sockaddr_in *sender_address);
 
   void ChangePort(int port_number);
-  void changeMaxPacketSize(int16_t maxPacketSize);
+  int GetPort();
+  void changeMaxPacketSize(uint16_t maxPacketSize);
 
- private:
+private:
   int client_socket_;
   int port_number_;
   socklen_t serverlen_;
@@ -31,13 +35,18 @@ class UdpClient {
 };
 
 class UdpException : public std::exception {
- public:
-  UdpException(const std::string& message) : message(message) {}
+public:
+  UdpException(const std::string &message) : message(message) {}
 
-  const char* what() const noexcept override { return message.c_str(); }
+  const char *what() const noexcept override { return message.c_str(); }
 
- private:
+private:
   std::string message;
 };
 
-#endif  // UdpClient_h
+class UdpTimeoutException : public UdpException {
+public:
+  UdpTimeoutException() : UdpException("Error: Timeout") {}
+};
+
+#endif // UdpClient_h

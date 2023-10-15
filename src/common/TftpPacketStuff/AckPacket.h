@@ -4,8 +4,8 @@
 #include "TftpPacket.h"
 
 class AckPacket : public TftpPacket {
- public:
-  AckPacket();
+public:
+  AckPacket(uint16_t block_number);
   AckPacket(std::vector<uint8_t> raw);
   uint16_t block_number;
 
@@ -13,4 +13,4 @@ class AckPacket : public TftpPacket {
   std::vector<uint8_t> MakeRaw();
 };
 
-#endif  // AckPacket_h
+#endif // AckPacket_h

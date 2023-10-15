@@ -1,14 +1,17 @@
 #ifndef TftpClient_H
 #define TftpClient_H
 
+#include <cstdint>
+#include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <vector>
 
-#include "../common/OptionStuff/Option.h"
-#include "../common/TftpPacketStuff/TftpPacket.h"
+#include "../common/TftpCommon.h"
 
 class TftpClient {
- public:
+public:
   struct TftpClientArgs {
     enum class TftpMode { READ, WRITE };
 
@@ -20,17 +23,26 @@ class TftpClient {
     std::vector<Option> options = {};
   };
 
-  TftpClient(TftpClientArgs args) : args_(args){};
-
-  
+  TftpClient(TftpClientArgs args);
 
   void run();
 
- private:
+private:
   TftpClientArgs args_;
+  UdpClient udp_client_;
 
   void Write();
   void Read();
 };
 
-#endif  // TftpClient_H
+class TftpClientException : public std::exception {
+public:
+  TftpClientException(const std::string &message) : message(message) {}
+
+  const char *what() const noexcept override { return message.c_str(); }
+
+private:
+  std::string message;
+};
+
+#endif // TftpClient_H

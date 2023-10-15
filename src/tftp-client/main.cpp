@@ -16,7 +16,7 @@ void PrintUsage() {
   exit(1);
 }
 
-TftpClient::TftpClientArgs ParseCommandLine(int argc, char* argv[]) {
+TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
   TftpClient::TftpClientArgs args;
   int i = 1;
   while (i < argc) {
@@ -54,8 +54,13 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char* argv[]) {
     i++;
   }
 
-  if (args.hostname.empty() || args.port == 0 || args.dest_filepath.empty()) {
+  if (args.hostname.empty() || args.dest_filepath.empty()) {
     PrintUsage();
+  }
+
+  // If port is not specified, use default port for TFTP
+  if (args.port == 0) {
+    args.port = 69;
   }
 
   // If filepath is not specified, read from stdin
@@ -67,8 +72,9 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char* argv[]) {
   return args;
 }
 
-int main(int argc, char* argv[]) {
-  auto client = TftpClient(ParseCommandLine(argc, argv));
+int main(int argc, char *argv[]) {
+  auto args = ParseCommandLine(argc, argv);
+  auto client = TftpClient(args);
 
   client.run();
 
