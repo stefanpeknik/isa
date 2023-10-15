@@ -41,6 +41,9 @@ void TftpClient::run() {
 }
 
 void TftpClient::Write() {
+
+  // TODO : make the code look cleaner
+
   // send WRQ packet
   auto wrq = ReadWritePacket(TftpPacket::Opcode::WRQ, args_.filepath,
                              ReadWritePacket::Mode::OCTET, args_.options);

@@ -33,6 +33,13 @@ private:
 
   void Write();
   void Read();
+
+  void SendWriteRequestPacket();
+  void ReceiveFirstResponsePacket();
+  void SendDataPackets();
+  void HandleIllegalOperationError(TFTPIllegalOperationError &e);
+  void HandleAckPacket(std::vector<uint8_t> &response);
+  void HandleOackPacket(const OackPacket &oack);
 };
 
 class TftpClientException : public std::exception {
