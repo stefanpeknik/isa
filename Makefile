@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -I./src/common
+CFLAGS = -g -Wall -fsanitize=address -std=c++17 -I./src/common
 
 CLIENT_SRC_DIR = ./src/tftp-client
 SERVER_SRC_DIR = ./src/tftp-server

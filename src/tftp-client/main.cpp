@@ -74,6 +74,8 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);
+  args.options = {Option("timeout", "5")};
+
   auto client = TftpClient(args);
 
   client.run();

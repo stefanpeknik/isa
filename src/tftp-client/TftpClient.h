@@ -11,7 +11,7 @@
 #include "../common/TftpCommon.h"
 
 class TftpClient {
-public:
+ public:
   struct TftpClientArgs {
     enum class TftpMode { READ, WRITE };
 
@@ -27,29 +27,25 @@ public:
 
   void run();
 
-private:
+ private:
   TftpClientArgs args_;
   UdpClient udp_client_;
 
   void Write();
   void Read();
 
-  void SendWriteRequestPacket();
-  void ReceiveFirstResponsePacket();
-  void SendDataPackets();
-  void HandleIllegalOperationError(TFTPIllegalOperationError &e);
-  void HandleAckPacket(std::vector<uint8_t> &response);
-  void HandleOackPacket(const OackPacket &oack);
+  void SetupUdpClient();
+  void ValidateOptionsInOack(std::vector<Option> oack_options);
 };
 
 class TftpClientException : public std::exception {
-public:
+ public:
   TftpClientException(const std::string &message) : message(message) {}
 
   const char *what() const noexcept override { return message.c_str(); }
 
-private:
+ private:
   std::string message;
 };
 
-#endif // TftpClient_H
+#endif  // TftpClient_H

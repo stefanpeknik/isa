@@ -50,8 +50,8 @@ ReadWritePacket::Mode ReadWritePacket::ParseMode(std::vector<uint8_t> mode) {
   }
 }
 
-std::vector<Option>
-ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
+std::vector<Option> ReadWritePacket::ParseOptions(
+    std::vector<uint8_t> options) {
   std::vector<Option> parsed_options = {};
 
   for (size_t i = 0; i < options.size();) {
@@ -65,7 +65,7 @@ ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option name not terminated with null byte");
     }
-    i++; // Skip null byte
+    i++;  // Skip null byte
 
     // Read option value
     std::string option_value;
@@ -77,7 +77,7 @@ ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option value not terminated with null byte");
     }
-    i++; // Skip null byte
+    i++;  // Skip null byte
 
     // Check if option value is missing
     if (option_value.empty()) {
@@ -107,8 +107,8 @@ std::string ReadWritePacket::ParseOptionName(std::vector<uint8_t> option_name) {
   return std::string(option_name.begin(), option_name.end());
 }
 
-std::string
-ReadWritePacket::ParseOptionValue(std::vector<uint8_t> option_value) {
+std::string ReadWritePacket::ParseOptionValue(
+    std::vector<uint8_t> option_value) {
   return std::string(option_value.begin(), option_value.end());
 }
 
@@ -123,15 +123,9 @@ std::vector<uint8_t> ReadWritePacket::MakeRaw() {
   auto filepathVec = StringToVectorNullTerminated(this->filepath);
   raw.insert(raw.end(), filepathVec.begin(), filepathVec.end());
 
-  // Add null terminator
-  raw.push_back(0);
-
   // Add mode
   auto modeVec = StringToVectorNullTerminated(ModeToString(this->mode));
   raw.insert(raw.end(), modeVec.begin(), modeVec.end());
-
-  // Add null terminator
-  raw.push_back(0);
 
   // Add options
   for (auto &option : this->options) {
@@ -144,13 +138,13 @@ std::vector<uint8_t> ReadWritePacket::MakeRaw() {
 
 std::string ReadWritePacket::ModeToString(ReadWritePacket::Mode mode) {
   switch (mode) {
-  case ReadWritePacket::Mode::NETASCII:
-    return "netascii";
-    break;
+    case ReadWritePacket::Mode::NETASCII:
+      return "netascii";
+      break;
 
-  case ReadWritePacket::Mode::OCTET:
-    return "octet";
-    break;
+    case ReadWritePacket::Mode::OCTET:
+      return "octet";
+      break;
   }
 
   // dummy return

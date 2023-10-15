@@ -25,14 +25,22 @@ UdpClient::UdpClient(std::string server_hostname, int port_number,
   // initialize the server address structure
   memset(&server_address_, 0, sizeof(server_address_));
 
-  server_address_.sin_family = AF_INET; // IPv4
+  server_address_.sin_family = AF_INET;  // IPv4
   // copy the server address to the server_address structure
   memcpy((char *)&server_address_.sin_addr.s_addr, (char *)server->h_addr,
          server->h_length);
   // set the port number
   server_address_.sin_port = htons(port_number_);
+  // set the server length
+  serverlen_ = sizeof(server_address_);
 
   maxPacketSize_ = maxPacketSize;
+}
+
+UdpClient::~UdpClient() {
+  if (client_socket_ > 0) {
+    close(client_socket_);
+  }
 }
 
 void UdpClient::Send(std::vector<uint8_t> data) {
