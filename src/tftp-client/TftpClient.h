@@ -39,9 +39,6 @@ class TftpClient {
   void SendWrq();
   void SendData();
 
-  void SendRrq();
-  void RecieveData();
-
   void SetupUdpClient();
   void ValidateOptionsInOack(std::vector<Option> oack_options);
 
