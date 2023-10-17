@@ -1,7 +1,7 @@
 #include "TftpClient.h"
 
 TftpClient::TftpClient(TftpClientArgs args)
-    : args_(args), udp_client_(UdpClient(args_.hostname, args_.port, {}, {})) {
+    : args_(args), udp_client_(UdpClient(args_.hostname, args_.port)) {
   SetupUdpClient();
 }
 
@@ -9,9 +9,11 @@ void TftpClient::run() {
   printf("TFTP client started\n");
   switch (args_.mode) {
     case TftpClientArgs::TftpMode::READ:
+      printf("Mode: READ\n");
       Read();
       break;
     case TftpClientArgs::TftpMode::WRITE:
+      printf("Mode: WRITE\n");
       Write();
       break;
   }
@@ -307,17 +309,16 @@ void TftpClient::SetupUdpClient() {
     }
   }
   if (blksize_ext && timeout_ext) {
-    udp_client_ =
-        UdpClient(args_.hostname, args_.port, stoi(blksize_ext->value),
-                  {stoi(timeout_ext->value), 0});
+    udp_client_.ChangeTimeout({stoi(timeout_ext->value), 0});
+    udp_client_.ChangeMaxPacketSize(stoi(blksize_ext->value));
+
   } else if (blksize_ext) {
-    udp_client_ =
-        UdpClient(args_.hostname, args_.port, stoi(blksize_ext->value), {});
+    udp_client_.ChangeTimeout({0, 0});
+    udp_client_.ChangeMaxPacketSize(stoi(blksize_ext->value));
   } else if (timeout_ext) {
-    udp_client_ = UdpClient(args_.hostname, args_.port, {},
-                            {stoi(timeout_ext->value), 0});
+    udp_client_.ChangeTimeout({stoi(timeout_ext->value), 0});
+    udp_client_.ChangeMaxPacketSize(512);
   }
-  udp_client_ = UdpClient(args_.hostname, args_.port, {}, {});
 }
 
 void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {

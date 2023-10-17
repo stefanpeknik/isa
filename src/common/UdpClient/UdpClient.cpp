@@ -1,25 +1,15 @@
 #include "UdpClient.h"
 
-UdpClient::UdpClient(std::string server_hostname, int port_number,
-                     uint16_t maxPacketSize, struct timeval timeout) {
+UdpClient::UdpClient(std::string server_hostname, int port_number) {
   // assign the port number
-  port_number_ = port_number;
+  ChangePort(port_number);
+
+  printf("socket: %d\n", client_socket_);
 
   // get the server address
   struct hostent *server;
   if ((server = gethostbyname(server_hostname.c_str())) == NULL) {
     throw UdpException("Error: Failed to get server address");
-  }
-
-  // create the socket
-  if ((client_socket_ = socket(AF_INET, SOCK_DGRAM, 0)) <= 0) {
-    throw UdpException("Error: Failed to create socket");
-  }
-
-  // set the timeout
-  if (setsockopt(client_socket_, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-                 sizeof(timeout)) < 0) {
-    throw UdpException("Error: Failed to set socket timeout");
   }
 
   // initialize the server address structure
@@ -34,7 +24,10 @@ UdpClient::UdpClient(std::string server_hostname, int port_number,
   // set the server length
   serverlen_ = sizeof(server_address_);
 
-  maxPacketSize_ = maxPacketSize;
+  // create the socket
+  if ((client_socket_ = socket(AF_INET, SOCK_DGRAM, 0)) <= 0) {
+    throw UdpException("Error: Failed to create socket");
+  }
 }
 
 UdpClient::~UdpClient() {
@@ -48,7 +41,8 @@ void UdpClient::Send(std::vector<uint8_t> data) {
   ssize_t bytes_sent = sendto(client_socket_, data.data(), data.size(), 0,
                               (struct sockaddr *)&server_address_, serverlen_);
   if (bytes_sent < 0) {
-    throw UdpException("Error: Failed to send data");
+    throw UdpException("Error: Failed to send data. Error: " +
+                       std::to_string(errno));
   }
 }
 
@@ -64,7 +58,13 @@ std::vector<uint8_t> UdpClient::ReceiveFromAny(sockaddr_in *sender_address) {
       recvfrom(client_socket_, buffer.data(), buffer.size(), 0,
                (struct sockaddr *)sender_address, &senderlen);
   if (bytes_received < 0) {
-    throw UdpTimeoutException();
+    if (errno == EWOULDBLOCK) {
+      // Handle the timeout
+      throw UdpTimeoutException();
+    } else {
+      // Handle other socket errors
+      throw UdpException("Error receiving data");
+    }
   }
 
   // Truncating the buffer to the actual size of the received data
@@ -98,6 +98,13 @@ void UdpClient::ChangePort(int port_number) {
 
 int UdpClient::GetPort() { return port_number_; }
 
-void UdpClient::changeMaxPacketSize(uint16_t maxPacketSize) {
+void UdpClient::ChangeMaxPacketSize(uint16_t maxPacketSize) {
   maxPacketSize_ = maxPacketSize;
+}
+
+void UdpClient::ChangeTimeout(struct timeval timeout) {
+  if (setsockopt(client_socket_, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                 sizeof(timeout)) < 0) {
+    throw UdpException("Error: Failed to set socket timeout");
+  }
 }

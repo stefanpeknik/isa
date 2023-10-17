@@ -16,9 +16,8 @@
 
 class UdpClient {
  public:
-  UdpClient(std::string server_hostname, int port_number,
-            uint16_t maxPacketSize = 2 + 2 + 512,
-            struct timeval timeout = {5, 0});
+  UdpClient(std::string server_hostname, int port_number);
+
   ~UdpClient();
 
   void Send(std::vector<uint8_t> data);
@@ -27,14 +26,18 @@ class UdpClient {
 
   void ChangePort(int port_number);
   int GetPort();
-  void changeMaxPacketSize(uint16_t maxPacketSize);
+  void ChangeMaxPacketSize(uint16_t maxPacketSize);
+  void ChangeTimeout(struct timeval timeout);
 
  private:
   int client_socket_;
   int port_number_;
   socklen_t serverlen_;
   struct sockaddr_in server_address_;
-  int16_t maxPacketSize_;
+  int16_t maxPacketSize_ =
+      2 + 2 +
+      512;  // the largest packet size in the TFTP protocol is 516 bytes: opcode
+            // (2 bytes) + block number (2 bytes) + data (512 bytes)
 };
 
 class UdpException : public std::exception {
