@@ -1,8 +1,9 @@
 import socket
+from datetime import datetime
 
 # Define the server's IP address and port
 server_host = "127.0.0.1"
-server_port = 69  # Change this to the desired port number
+server_port = 2025  # Change this to the desired port number
 
 # Create a UDP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -18,7 +19,7 @@ while True:
         data, client_address = server_socket.recvfrom(1024)  # Adjust the buffer size as needed
 
         # Process the received data (handle binary data)
-        print(f"Received data from {client_address}: {data}")
+        print(f"{datetime.now()} : Received data from {client_address}: {data}")
 
     except Exception as e:
         print(f"Error: {str(e)}")

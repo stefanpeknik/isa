@@ -6,3 +6,7 @@ tftp-server
 tftp-client
 !/src/tftp-server
 !/src/tftp-client
+
+test-server.py
+test
+test.cpp

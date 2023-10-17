@@ -27,6 +27,8 @@ class TftpClient {
 
   void run();
 
+  const int numRetries = 5;
+
  private:
   TftpClientArgs args_;
   UdpClient udp_client_;
@@ -34,8 +36,17 @@ class TftpClient {
   void Write();
   void Read();
 
+  void SendWrq();
+  void SendData();
+
+  void SendRrq();
+  void RecieveData();
+
   void SetupUdpClient();
   void ValidateOptionsInOack(std::vector<Option> oack_options);
+
+  void WriteOld();
+  void ReadOld();
 };
 
 class TftpClientException : public std::exception {
@@ -46,6 +57,12 @@ class TftpClientException : public std::exception {
 
  private:
   std::string message;
+};
+
+class TftpClientBlockNumberException : public TftpClientException {
+ public:
+  TftpClientBlockNumberException(const std::string &message)
+      : TftpClientException(message) {}
 };
 
 #endif  // TftpClient_H

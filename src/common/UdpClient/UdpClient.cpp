@@ -4,8 +4,6 @@ UdpClient::UdpClient(std::string server_hostname, int port_number) {
   // assign the port number
   ChangePort(port_number);
 
-  printf("socket: %d\n", client_socket_);
-
   // get the server address
   struct hostent *server;
   if ((server = gethostbyname(server_hostname.c_str())) == NULL) {
