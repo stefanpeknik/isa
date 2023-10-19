@@ -9,10 +9,11 @@ void PrintUsage() {
                "<destination_filepath>\n"
                "-h <hostname> - The hostname of the server to connect to\n"
                "-p <port> - The port of the server to connect to\n"
-               "-f <filepath> - The filepath to read from or write to\n"
+               "-f <filepath> - The filepath to read from\n"
                "-t <destination_filepath> - The filepath to write to or read "
                "from\n"
-               "If -f is not specified, the filepath will be read from stdin\n";
+               "If -f is not specified, the filepath where to write to will be "
+               "read from stdin\n";
   exit(1);
 }
 

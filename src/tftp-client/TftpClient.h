@@ -9,9 +9,10 @@
 #include <vector>
 
 #include "../common/TftpCommon.h"
+#include "../common/logger.h"
 
 class TftpClient {
- public:
+public:
   struct TftpClientArgs {
     enum class TftpMode { READ, WRITE };
 
@@ -29,7 +30,7 @@ class TftpClient {
 
   const int numRetries = 5;
 
- private:
+private:
   TftpClientArgs args_;
   UdpClient udp_client_;
 
@@ -47,19 +48,19 @@ class TftpClient {
 };
 
 class TftpClientException : public std::exception {
- public:
+public:
   TftpClientException(const std::string &message) : message(message) {}
 
   const char *what() const noexcept override { return message.c_str(); }
 
- private:
+private:
   std::string message;
 };
 
 class TftpClientBlockNumberException : public TftpClientException {
- public:
+public:
   TftpClientBlockNumberException(const std::string &message)
       : TftpClientException(message) {}
 };
 
-#endif  // TftpClient_H
+#endif // TftpClient_H

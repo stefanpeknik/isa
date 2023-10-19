@@ -18,32 +18,29 @@ void TftpClient::Read() {
       // send RRQ packet
       auto rrq = ReadWritePacket(TftpPacket::Opcode::RRQ, args_.filepath,
                                  ReadWritePacket::Mode::OCTET, args_.options);
+      Logger::Log("sending RRQ packet");
+      Logger::LogHexa("RRQ packet", rrq.MakeRaw());
       udp_client_.Send(rrq.MakeRaw());
       // receive DATA / OACK / ERROR packet
       std::unique_ptr<sockaddr_in> sender_address(new sockaddr_in);
       auto response_1 = udp_client_.ReceiveFromAny(sender_address.get());
+      Logger::Log("received packet");
+      Logger::LogHexa("packet", response_1);
       // change port to the one that the first server response came from
       udp_client_.ChangePort(sender_address->sin_port);
       TftpPacket::Opcode opcode_1;
       // check if incomming packet is a correct TFTP packet
       try {
         opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
-      } catch (TFTPIllegalOperationError &e) {  // incomming packet is not a
-                                                // correct TFTP packet
+      } catch (TFTPIllegalOperationError &e) { // incomming packet is not a
+                                               // correct TFTP packet
         auto error =
             ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION, e.what());
         udp_client_.Send(error.MakeRaw());
         throw TftpClientException(e.what());
       }
-
-      if (!file) {
-        auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND,
-                                 "File not found");
-        udp_client_.Send(error.MakeRaw());
-        throw TftpClientException("File not found");
-      }
       // check if opcode is DATA, OACK, or ERROR
-      if (opcode_1 == TftpPacket::Opcode::DATA) {  // server responded with DATA
+      if (opcode_1 == TftpPacket::Opcode::DATA) { // server responded with DATA
         auto data = DataPacket(response_1);
         if (data.block_number != 1) {
           auto error = ErrorPacket(
@@ -65,8 +62,8 @@ void TftpClient::Read() {
         block_number = 1;
         // write data to file
         file.write((char *)data.data.data(), data.data.size());
-      } else if (opcode_1 == TftpPacket::Opcode::OACK) {  // server responded
-                                                          // with OACK
+      } else if (opcode_1 == TftpPacket::Opcode::OACK) { // server responded
+                                                         // with OACK
         auto oack = OackPacket(response_1);
         // validate OACK packet
         if (args_.options.size() < oack.options.size()) {
@@ -84,8 +81,8 @@ void TftpClient::Read() {
         SetupUdpClient();
         // set block number to 0
         block_number = 0;
-      } else if (opcode_1 == TftpPacket::Opcode::ERROR) {  // server responded
-                                                           // with ERROR
+      } else if (opcode_1 == TftpPacket::Opcode::ERROR) { // server responded
+                                                          // with ERROR
         auto error = ErrorPacket(response_1);
         // TODO: client could send a new RRQ packet without options to retry
         throw TftpClientException(error.error_message);
@@ -95,7 +92,7 @@ void TftpClient::Read() {
         udp_client_.Send(error.MakeRaw());
         throw TftpClientException("Expected DATA, OACK, or ERROR packet");
       }
-    } catch (UdpTimeoutException &e) {  // timeout
+    } catch (UdpTimeoutException &e) { // timeout
       retries++;
       if (retries == numRetries) {
         throw TftpClientException("Error: Timeout");
@@ -130,7 +127,7 @@ void TftpClient::Read() {
           auto response_n = udp_client_.ReceiveFromSpecific();
           TftpPacket::Opcode opcode_n =
               TftpPacket::GetOpcodeFromRaw(response_n);
-          if (opcode_n == TftpPacket::Opcode::DATA) {  // DATA received
+          if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
             auto data_n = DataPacket(response_n);
             if (data_n.block_number == block_number + 1) {
               // DATA received for the correct block number, increment block
@@ -153,13 +150,13 @@ void TftpClient::Read() {
                     std::to_string(data_n.block_number));
               }
             }
-          } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
+          } else if (opcode_n == TftpPacket::Opcode::ERROR) { // ERROR received
             file.close();
             auto error = ErrorPacket(response_n);
             throw TftpClientException(error.error_message);
           }
           // try again
-        } catch (UdpTimeoutException &e) {  // timeout
+        } catch (UdpTimeoutException &e) { // timeout
           retries++;
           if (retries == numRetries) {
             file.close();
