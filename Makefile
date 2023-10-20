@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -fsanitize=address -std=c++17 -I./src/common
+CFLAGS = -g -Wall -fsanitize=address -std=c++17
 
 CLIENT_SRC_DIR = ./src/tftp-client
 SERVER_SRC_DIR = ./src/tftp-server
@@ -17,10 +17,10 @@ SERVER_EXEC = tftp-server
 all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
 $(CLIENT_EXEC): $(CLIENT_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^
 
 $(SERVER_EXEC): $(SERVER_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@

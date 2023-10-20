@@ -20,7 +20,6 @@ UdpClient::UdpClient(std::string server_hostname, int port_number) {
   // set the port number
   server_address_.sin_port = htons(port_number_);
   // set the server length
-  serverlen_ = sizeof(server_address_);
 
   // create the socket
   if ((client_socket_ = socket(AF_INET, SOCK_DGRAM, 0)) <= 0) {
@@ -35,9 +34,10 @@ UdpClient::~UdpClient() {
 }
 
 void UdpClient::Send(std::vector<uint8_t> data) {
+  socklen_t serverlen = sizeof(server_address_);
   // Sending the data
   ssize_t bytes_sent = sendto(client_socket_, data.data(), data.size(), 0,
-                              (struct sockaddr *)&server_address_, serverlen_);
+                              (struct sockaddr *)&server_address_, serverlen);
   if (bytes_sent < 0) {
     throw UdpException("Error: Failed to send data. Error: " +
                        std::to_string(errno));

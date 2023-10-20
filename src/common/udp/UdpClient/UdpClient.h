@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "../UdpCommon.h"
+
 class UdpClient {
  public:
   UdpClient(std::string server_hostname, int port_number);
@@ -32,27 +34,11 @@ class UdpClient {
  private:
   int client_socket_;
   int port_number_;
-  socklen_t serverlen_;
   struct sockaddr_in server_address_;
   int16_t maxPacketSize_ =
       2 + 2 +
       512;  // the largest packet size in the TFTP protocol is 516 bytes: opcode
             // (2 bytes) + block number (2 bytes) + data (512 bytes)
-};
-
-class UdpException : public std::exception {
- public:
-  UdpException(const std::string &message) : message(message) {}
-
-  const char *what() const noexcept override { return message.c_str(); }
-
- private:
-  std::string message;
-};
-
-class UdpTimeoutException : public UdpException {
- public:
-  UdpTimeoutException() : UdpException("Error: Timeout") {}
 };
 
 #endif  // UdpClient_h

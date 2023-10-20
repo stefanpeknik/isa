@@ -33,10 +33,7 @@ ReadWritePacket::ReadWritePacket(std::vector<uint8_t> raw)
 }
 
 ReadWritePacket::Mode ReadWritePacket::ParseMode(std::vector<uint8_t> mode) {
-  std::string modeStr;
-  for (uint8_t byte : mode) {
-    modeStr += static_cast<char>(byte);
-  }
+  std::string modeStr(mode.begin(), mode.end());
 
   // Convert modeStr to lowercase for case-insensitive comparison
   std::transform(modeStr.begin(), modeStr.end(), modeStr.begin(), ::tolower);

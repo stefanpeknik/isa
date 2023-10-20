@@ -10,14 +10,16 @@ void TftpClient::SendWrq() {
   while (retries < numRetries) {
     try {
       // send WRQ packet
-      auto wrq = ReadWritePacket(TftpPacket::Opcode::WRQ, args_.filepath,
+      auto wrq = ReadWritePacket(TftpPacket::Opcode::WRQ, args_.dest_filepath,
                                  ReadWritePacket::Mode::OCTET, args_.options);
+      Logger::Log("sending WRQ packet");
       udp_client_.Send(wrq.MakeRaw());
       // receive ACK / OACK / ERROR packet
       std::unique_ptr<sockaddr_in> sender_address(new sockaddr_in);
       auto response_1 = udp_client_.ReceiveFromAny(sender_address.get());
       // change port to the one that the first server response came from
       udp_client_.ChangePort(sender_address->sin_port);
+      Logger::Log("New port: " + std::to_string(udp_client_.GetPort()));
       TftpPacket::Opcode opcode_1;
       // check if incomming packet is a correct TFTP packet
       try {
@@ -31,6 +33,7 @@ void TftpClient::SendWrq() {
       }
       // check if opcode is ACK, OACK, or ERROR
       if (opcode_1 == TftpPacket::Opcode::ACK) {  // server responded with ACK
+        Logger::Log("received ACK packet");
         auto ack = AckPacket(response_1);
         if (ack.block_number != 0) {
           auto error_end = ErrorPacket(
@@ -51,6 +54,7 @@ void TftpClient::SendWrq() {
         SetupUdpClient();
       } else if (opcode_1 == TftpPacket::Opcode::OACK) {  // server responded
                                                           // with OACK
+        Logger::Log("received OACK packet");
         auto oack = OackPacket(response_1);
         // validate OACK packet
         if (args_.options.size() < oack.options.size()) {
@@ -68,6 +72,7 @@ void TftpClient::SendWrq() {
         SetupUdpClient();
       } else if (opcode_1 == TftpPacket::Opcode::ERROR) {  // server responded
                                                            // with ERROR
+        Logger::Log("received ERROR packet");
         auto error = ErrorPacket(response_1);
         // TODO: client could send a new WRQ packet without options to retry
         throw TftpClientException(error.error_message);
@@ -102,28 +107,15 @@ void TftpClient::SendData() {
       blksize = stoi(option.value);
     }
   }
-  // open file
-  std::ifstream file(args_.filepath, std::ios::binary);
-  if (!file) {
-    auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND,
-                             "File not found locally");
-    udp_client_.Send(error.MakeRaw());
-    throw TftpClientException("File not found locally");
-  }
   // loop that will continue until the last DATA packet containing less than
   // blksize bytes of data is sent or until the client receives an ERROR packet
   bool last_packet_sent = false;
   while (!last_packet_sent) {
-    // read a piece of data from the file
-    std::vector<char> data(blksize);
-    file.read(data.data(), blksize);
-    std::streamsize bytes_read = file.gcount();
-    if (bytes_read < blksize) {
+    auto data = io_handler.Read(blksize);
+    if (data.size() < blksize) {
       // last packet, set flag to true
       last_packet_sent = true;
     }
-    // convert the data vector to a vector of uint8_t
-    std::vector<uint8_t> data_uint8(data.begin(), data.begin() + bytes_read);
     // keep sending DATA packets until an ACK packet with the correct block
     // number is received or retry limit is reached
     int retries = 0;
@@ -131,7 +123,8 @@ void TftpClient::SendData() {
     while (!ackReceived && retries < numRetries) {
       try {
         // create and send DATA packet
-        DataPacket data_packet(block_number, data_uint8);
+        DataPacket data_packet(block_number, data);
+        Logger::Log("sending DATA packet");
         udp_client_.Send(data_packet.MakeRaw());
         auto response_n = udp_client_.ReceiveFromSpecific();
         TftpPacket::Opcode opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
@@ -146,7 +139,6 @@ void TftpClient::SendData() {
             // ACK received for the wrong block number, try again
             retries++;
             if (retries == numRetries) {
-              file.close();
               throw TftpClientBlockNumberException(
                   "Expected ACK packet with block number " +
                   std::to_string(block_number) + ", got block number " +
@@ -154,7 +146,6 @@ void TftpClient::SendData() {
             }
           }
         } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
-          file.close();
           auto error = ErrorPacket(response_n);
           throw TftpClientException(error.error_message);
         }
@@ -162,12 +153,9 @@ void TftpClient::SendData() {
       } catch (UdpTimeoutException &e) {  // timeout
         retries++;                        // increment retry counter
         if (retries == numRetries) {
-          file.close();
           throw;  // rethrow exception
         }
       }  // every other exception is immidiately considered fatal and is thrown
     }
   }
-  // close file
-  file.close();
 }

@@ -8,11 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "../common/IOHandler/IOHandler.h"
 #include "../common/TftpCommon.h"
 #include "../common/logger.h"
+#include "../common/udp/UdpClient/UdpClient.h"
 
 class TftpClient {
-public:
+ public:
   struct TftpClientArgs {
     enum class TftpMode { READ, WRITE };
 
@@ -21,6 +23,8 @@ public:
     std::string filepath = "";
     std::string dest_filepath = "";
     TftpMode mode;
+    ReadWritePacket::Mode file_mode =
+        ReadWritePacket::Mode::OCTET;  // set default to octet
     std::vector<Option> options = {};
   };
 
@@ -30,7 +34,9 @@ public:
 
   const int numRetries = 5;
 
-private:
+  IOHandler io_handler;
+
+ private:
   TftpClientArgs args_;
   UdpClient udp_client_;
 
@@ -48,19 +54,19 @@ private:
 };
 
 class TftpClientException : public std::exception {
-public:
+ public:
   TftpClientException(const std::string &message) : message(message) {}
 
   const char *what() const noexcept override { return message.c_str(); }
 
-private:
+ private:
   std::string message;
 };
 
 class TftpClientBlockNumberException : public TftpClientException {
-public:
+ public:
   TftpClientBlockNumberException(const std::string &message)
       : TftpClientException(message) {}
 };
 
-#endif // TftpClient_H
+#endif  // TftpClient_H

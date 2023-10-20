@@ -1,39 +1,42 @@
 #include "TftpClient.h"
 
 TftpClient::TftpClient(TftpClientArgs args)
-    : args_(args), udp_client_(UdpClient(args_.hostname, args_.port)) {
+    : io_handler(IOHandler(args.mode == TftpClientArgs::TftpMode::READ
+                               ? IOHandler::IO::FILE
+                               : IOHandler::IO::STD)),
+      args_(args),
+      udp_client_(UdpClient(args_.hostname, args_.port)) {
+  if (io_handler.io_type == IOHandler::IO::FILE) {
+    io_handler.OpenFile(args_.dest_filepath, std::ios_base::binary);
+  }
   SetupUdpClient();
 }
 
 void TftpClient::run() {
   Logger::Log("TFTP client started\n");
   switch (args_.mode) {
-  case TftpClientArgs::TftpMode::READ:
-    Logger::Log("Mode: READ\n");
-    Read();
-    break;
-  case TftpClientArgs::TftpMode::WRITE:
-    Logger::Log("Mode: WRITE\n");
-    Write();
-    break;
+    case TftpClientArgs::TftpMode::READ:
+      Read();
+      break;
+    case TftpClientArgs::TftpMode::WRITE:
+      Write();
+      break;
   }
 }
-
-// TODO : what to do if theres no space on disk?
 
 void TftpClient::SetupUdpClient() {
   Option *blksize_ext = NULL;
   Option *timeout_ext = NULL;
   for (auto &option : args_.options) {
     switch (option.name) {
-    case Option::Name::BLKSIZE:
-      blksize_ext = &option;
-      break;
-    case Option::Name::TIMEOUT:
-      timeout_ext = &option;
-      break;
-    default:
-      break;
+      case Option::Name::BLKSIZE:
+        blksize_ext = &option;
+        break;
+      case Option::Name::TIMEOUT:
+        timeout_ext = &option;
+        break;
+      default:
+        break;
     }
   }
   if (blksize_ext && timeout_ext) {

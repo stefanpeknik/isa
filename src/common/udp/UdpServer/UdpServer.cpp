@@ -1,0 +1,53 @@
+#include "UdpServer.h"
+
+UdpServer::UdpServer(int port_number) {
+  ChangePort(port_number);
+
+  server_socket_ = socket(AF_INET, SOCK_DGRAM, 0);
+  if (server_socket_ == -1) {
+    throw UdpException("Error: Failed to create socket");
+  }
+
+  server_address_.sin_family = AF_INET;
+  server_address_.sin_port = htons(port_number_);
+  server_address_.sin_addr.s_addr = INADDR_ANY;
+
+  if (bind(server_socket_, (struct sockaddr *)&server_address_,
+           sizeof(server_address_)) == -1) {
+    throw UdpException("Error: Failed to bind socket");
+  }
+}
+
+UdpServer::~UdpServer() { close(server_socket_); }
+
+void UdpServer::ChangePort(int port_number) {
+  port_number_ = port_number;
+  server_address_.sin_port = htons(port_number_);
+}
+
+int UdpServer::GetPort() { return port_number_; }
+
+bool UdpServer::Receive(std::vector<uint8_t> &data,
+                        sockaddr_in &sender_address) {
+  socklen_t sender_address_len = sizeof(sender_address);
+  data.resize(maxPacketSize_);  // Max packet size
+  ssize_t bytes_received =
+      recvfrom(server_socket_, data.data(), data.size(), 0,
+               (struct sockaddr *)&sender_address, &sender_address_len);
+
+  if (bytes_received == -1) return false;
+
+  data.resize(bytes_received);
+  return true;
+}
+
+void UdpServer::ChangeTimeout(timeval timeout) {
+  if (setsockopt(server_socket_, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                 sizeof(timeout)) == -1) {
+    throw UdpException("Error: Failed to set timeout");
+  }
+}
+
+void UdpServer::ChangeMaxPacketSize(uint16_t maxPacketSize) {
+  maxPacketSize_ = maxPacketSize;
+}

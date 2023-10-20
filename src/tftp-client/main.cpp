@@ -4,16 +4,19 @@
 
 #include "TftpClient.h"
 
-void PrintUsage() {
-  std::cerr << "Usage: tftpclient -h <hostname> -p <port> [-f <filepath>] -t "
-               "<destination_filepath>\n"
-               "-h <hostname> - The hostname of the server to connect to\n"
-               "-p <port> - The port of the server to connect to\n"
-               "-f <filepath> - The filepath to read from\n"
-               "-t <destination_filepath> - The filepath to write to or read "
-               "from\n"
-               "If -f is not specified, the filepath where to write to will be "
-               "read from stdin\n";
+int FILEPATH_MAX_LENGTH = 400;
+
+void PrintUsageAndExit() {
+  std::cout
+      << "Usage:\n"
+         "tftp-client -h hostname [-p port] [-f filepath] -t dest_filepath\n\n"
+         "-h Remote server's IP address/domain name\n"
+         "-p Remote server's port\n"
+         "If not specified, the default port is assumed per specification\n"
+         "-f Path to the file to be downloaded from the server (download)\n"
+         "If not specified, data will be read from stdin (upload)\n"
+         "-t Path where the file will be stored on the remote server or "
+         "locally\n";
   exit(1);
 }
 
@@ -27,21 +30,21 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
       if (i < argc) {
         args.hostname = argv[i];
       } else {
-        PrintUsage();
+        PrintUsageAndExit();
       }
     } else if (arg == "-p") {
       i++;
       if (i < argc) {
         args.port = std::atoi(argv[i]);
       } else {
-        PrintUsage();
+        PrintUsageAndExit();
       }
     } else if (arg == "-f") {
       i++;
       if (i < argc) {
         args.filepath = argv[i];
       } else {
-        PrintUsage();
+        PrintUsageAndExit();
       }
     } else if (arg == "-t") {
       i++;
@@ -49,14 +52,14 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
         args.dest_filepath = argv[i];
         args.mode = TftpClient::TftpClientArgs::TftpMode::READ;
       } else {
-        PrintUsage();
+        PrintUsageAndExit();
       }
     }
     i++;
   }
 
   if (args.hostname.empty() || args.dest_filepath.empty()) {
-    PrintUsage();
+    PrintUsageAndExit();
   }
 
   // If port is not specified, use default port for TFTP
@@ -79,7 +82,12 @@ int main(int argc, char *argv[]) {
 
   auto client = TftpClient(args);
 
-  client.run();
+  try {
+    client.run();
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
 
   return 0;
 }
