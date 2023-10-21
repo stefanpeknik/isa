@@ -92,3 +92,8 @@ bool IOHandler::EnoughSpaceOnDisk(uintmax_t num_bytes) {
   std::filesystem::space_info space = std::filesystem::space(filepath);
   return space.available >= num_bytes;
 }
+
+bool IOHandler::FileExists(std::string filepath) {
+  return std::filesystem::exists(filepath);
+}
+

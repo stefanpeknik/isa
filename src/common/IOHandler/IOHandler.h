@@ -27,6 +27,8 @@ class IOHandler {
   void OpenFile(std::string filepath, std::ios_base::openmode mode);
 
   bool EnoughSpaceOnDisk(uintmax_t num_bytes);
+  bool FileExists(std::string filepath);
+  bool IsReadable(std::string filepath);
 
  private:
   std::fstream file_;

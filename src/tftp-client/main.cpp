@@ -76,6 +76,13 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
   return args;
 }
 
+// TODO : check if there is enough space for file to be read
+// TODO : add stuff to tsize option
+
+// TODO : move server_address_ from UDP client to TFTP client
+// TODO : if client recieves response from TID other then the one agreed upon,
+// send ERROR and ignore packet
+
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);
   args.options = {Option("timeout", "5")};

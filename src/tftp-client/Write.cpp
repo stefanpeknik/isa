@@ -22,26 +22,13 @@ void TftpClient::SendWrq() {
       Logger::Log("New port: " + std::to_string(udp_client_.GetPort()));
       TftpPacket::Opcode opcode_1;
       // check if incomming packet is a correct TFTP packet
-      try {
-        opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
-      } catch (TFTPIllegalOperationError &e) {  // incomming packet is not a
-                                                // correct TFTP packet
-        auto error =
-            ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION, e.what());
-        udp_client_.Send(error.MakeRaw());
-        throw TftpClientException(e.what());
-      }
+      opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
       // check if opcode is ACK, OACK, or ERROR
       if (opcode_1 == TftpPacket::Opcode::ACK) {  // server responded with ACK
         Logger::Log("received ACK packet");
         auto ack = AckPacket(response_1);
         if (ack.block_number != 0) {
-          auto error_end = ErrorPacket(
-              ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-              "Expected ACK packet with block number 0, got block number " +
-                  std::to_string(ack.block_number));
-          udp_client_.Send(error_end.MakeRaw());
-          throw TftpClientException(
+          throw TFTPIllegalOperationError(
               "Expected ACK packet with block number 0, got "
               "block number " +
               std::to_string(ack.block_number));
@@ -58,11 +45,7 @@ void TftpClient::SendWrq() {
         auto oack = OackPacket(response_1);
         // validate OACK packet
         if (args_.options.size() < oack.options.size()) {
-          auto error = ErrorPacket(
-              ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-              "Server responded with more options than client requested");
-          udp_client_.Send(error.MakeRaw());
-          throw TftpClientException(
+          throw TFTPIllegalOperationError(
               "Server responded with more options than client requested");
         }
         ValidateOptionsInOack(oack.options);
@@ -75,12 +58,9 @@ void TftpClient::SendWrq() {
         Logger::Log("received ERROR packet");
         auto error = ErrorPacket(response_1);
         // TODO: client could send a new WRQ packet without options to retry
-        throw TftpClientException(error.error_message);
+        throw TFTPIllegalOperationError(error.error_message);
       } else {
-        auto error = ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-                                 "Expected ACK, OACK, or ERROR packet");
-        udp_client_.Send(error.MakeRaw());
-        throw TftpClientException("Expected ACK, OACK, or ERROR packet");
+        throw TFTPIllegalOperationError("Expected ACK, OACK, or ERROR packet");
       }
       return;  // WRQ sent and ACK / OACK / ERROR received and handled
     } catch (UdpTimeoutException &e) {  // timeout
@@ -111,7 +91,7 @@ void TftpClient::SendData() {
   // blksize bytes of data is sent or until the client receives an ERROR packet
   bool last_packet_sent = false;
   while (!last_packet_sent) {
-    auto data = io_handler.Read(blksize);
+    auto data = io_handler_.Read(blksize);
     if (data.size() < blksize) {
       // last packet, set flag to true
       last_packet_sent = true;
@@ -139,7 +119,7 @@ void TftpClient::SendData() {
             // ACK received for the wrong block number, try again
             retries++;
             if (retries == numRetries) {
-              throw TftpClientBlockNumberException(
+              throw TFTPIllegalOperationError(
                   "Expected ACK packet with block number " +
                   std::to_string(block_number) + ", got block number " +
                   std::to_string(ack_n.block_number));
@@ -147,7 +127,7 @@ void TftpClient::SendData() {
           }
         } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
           auto error = ErrorPacket(response_n);
-          throw TftpClientException(error.error_message);
+          throw TFTPIllegalOperationError(error.error_message);
         }
         // try again
       } catch (UdpTimeoutException &e) {  // timeout

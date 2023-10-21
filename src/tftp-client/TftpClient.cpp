@@ -1,26 +1,64 @@
 #include "TftpClient.h"
 
 TftpClient::TftpClient(TftpClientArgs args)
-    : io_handler(IOHandler(args.mode == TftpClientArgs::TftpMode::READ
-                               ? IOHandler::IO::FILE
-                               : IOHandler::IO::STD)),
+    : io_handler_(IOHandler(args.mode == TftpClientArgs::TftpMode::READ
+                                ? IOHandler::IO::FILE
+                                : IOHandler::IO::STD)),
       args_(args),
       udp_client_(UdpClient(args_.hostname, args_.port)) {
-  if (io_handler.io_type == IOHandler::IO::FILE) {
-    io_handler.OpenFile(args_.dest_filepath, std::ios_base::binary);
+  if (io_handler_.io_type == IOHandler::IO::FILE) {
+    io_handler_.OpenFile(args_.dest_filepath, std::ios_base::binary);
   }
   SetupUdpClient();
 }
 
 void TftpClient::run() {
   Logger::Log("TFTP client started\n");
-  switch (args_.mode) {
-    case TftpClientArgs::TftpMode::READ:
-      Read();
-      break;
-    case TftpClientArgs::TftpMode::WRITE:
-      Write();
-      break;
+  try {
+    switch (args_.mode) {
+      case TftpClientArgs::TftpMode::READ:
+        Read();
+        break;
+      case TftpClientArgs::TftpMode::WRITE:
+        Write();
+        break;
+    }
+  } catch (TFTPFileNotFoundError &e) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPAccessViolationError &e) {
+    auto error =
+        ErrorPacket(ErrorPacket::ErrorCode::ACCESS_VIOLATION, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPDiskFullError &e) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::DISK_FULL, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPIllegalOperationError &e) {
+    auto error =
+        ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPUnknownTransferIDError &e) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::UNKNOWN_TID, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPFileAlreadyExistsError &e) {
+    auto error =
+        ErrorPacket(ErrorPacket::ErrorCode::FILE_ALREADY_EXISTS, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TFTPNoSuchUserError &e) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::NO_SUCH_USER, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
+  } catch (TTFOptionNegotiationError &e) {
+    auto error =
+        ErrorPacket(ErrorPacket::ErrorCode::FAILED_NEGOTIATION, e.what());
+    udp_client_.Send(error.MakeRaw());
+    throw;
   }
 }
 
@@ -68,36 +106,21 @@ void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {
         found = true;
         if (oack_option.name == Option::Name::BLKSIZE) {
           if (stoi(oack_option.value) > stoi(client_option.value)) {
-            auto error = ErrorPacket(
-                ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-                "Server responded with option 'blksize' with value higher "
-                "than client requested");
-            udp_client_.Send(error.MakeRaw());
-            throw TftpClientException(
+            throw TFTPIllegalOperationError(
                 "Server responded with option 'blksize' with value higher "
                 "than client requested");
           }
         }
         if (oack_option.name == Option::Name::TIMEOUT) {
           if (stoi(oack_option.value) > stoi(client_option.value)) {
-            auto error = ErrorPacket(
-                ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-                "Server responded with option 'timeout' with value higher "
-                "than client requested");
-            udp_client_.Send(error.MakeRaw());
-            throw TftpClientException(
+            throw TFTPIllegalOperationError(
                 "Server responded with option 'timeout' with value higher "
                 "than client requested");
           }
         }
         if (oack_option.name == Option::Name::TSIZE) {
           if (stoi(oack_option.value) != stoi(client_option.value)) {
-            auto error = ErrorPacket(
-                ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-                "Server responded with option 'tsize' with value different "
-                "than client requested");
-            udp_client_.Send(error.MakeRaw());
-            throw TftpClientException(
+            throw TFTPIllegalOperationError(
                 "Server responded with option 'tsize' with value different "
                 "than client requested");
           }
@@ -105,14 +128,9 @@ void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {
       }
     }
     if (!found) {
-      auto error =
-          ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
-                      "Server responded with option '" + oack_option.nameStr +
-                          "' that client did not request");
-      udp_client_.Send(error.MakeRaw());
-      throw TftpClientException("Server responded with option '" +
-                                oack_option.nameStr +
-                                "' that client did not request");
+      throw TFTPIllegalOperationError("Server responded with option '" +
+                                      oack_option.nameStr +
+                                      "' that client did not request");
     }
   }
 }
