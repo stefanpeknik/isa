@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "../common/IOHandler/IOHandler.h"
+#include "../common/IO/IO.h"
 #include "../common/TftpCommon.h"
 #include "../common/logger.h"
 #include "../common/udp/UdpClient/UdpClient.h"
@@ -35,9 +35,9 @@ class TftpClient {
   const int numRetries = 5;
 
  private:
-  IOHandler io_handler_;
   TftpClientArgs args_;
   UdpClient udp_client_;
+  struct sockaddr_in server_address_;
 
   void Write();
   void Read();
@@ -46,7 +46,19 @@ class TftpClient {
   void SendData();
 
   void SetupUdpClient();
+  std::vector<uint8_t> RecievePacketFromServer();
   void ValidateOptionsInOack(std::vector<Option> oack_options);
+};
+
+class RecievedErrorPacketException : public std::exception {
+ public:
+  RecievedErrorPacketException(std::string error_message)
+      : error_message_(error_message) {}
+
+  virtual const char *what() const throw() { return error_message_.c_str(); }
+
+ private:
+  std::string error_message_;
 };
 
 #endif  // TftpClient_H

@@ -24,9 +24,9 @@ Option::Option(std::string name, std::string value) {
     this->name = Name::TIMEOUT;
   } else if (name == "tsize") {
     this->name = Name::TSIZE;
-    // } else if (name == "new option") { this->name = Name::NEW_OPTION;
   } else {
-    throw UnsupportedOptionException(name);
+    // unsupported option
+    this->name = Name::UNSUPPORTED;
   }
 
   // store string name for later use
@@ -34,41 +34,50 @@ Option::Option(std::string name, std::string value) {
 
   // Validate option value
   switch (this->name) {
-  case Name::BLKSIZE:
-    try {
-      int blockSize = std::stoi(value);
-      if (blockSize >= MIN_BLOCK_SIZE && blockSize <= MAX_BLOCK_SIZE) {
-        // Valid block size
-      } else {
-        // Invalid block size
+    case Name::BLKSIZE:
+      try {
+        int blockSize = std::stoi(value);
+        if (blockSize >= MIN_BLOCK_SIZE && blockSize <= MAX_BLOCK_SIZE) {
+          // Valid block size
+        } else {
+          // Invalid block size
+          throw InvalidOptionValueException("BLKSIZE", value);
+        }
+      } catch (const std::invalid_argument &e) {
+        // Invalid format, not an integer
         throw InvalidOptionValueException("BLKSIZE", value);
       }
-    } catch (const std::invalid_argument &e) {
-      // Invalid format, not an integer
-      throw InvalidOptionValueException("BLKSIZE", value);
-    }
-    break;
+      break;
 
-  case Name::TIMEOUT:
-    try {
-      int timeout = std::stoi(value);
-      if (timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT) {
-        // Valid timeout value
-      } else {
-        // Invalid timeout value
+    case Name::TIMEOUT:
+      try {
+        int timeout = std::stoi(value);
+        if (timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT) {
+          // Valid timeout value
+        } else {
+          // Invalid timeout value
+          throw InvalidOptionValueException("TIMEOUT", value);
+        }
+      } catch (const std::invalid_argument &e) {
+        // Invalid format, not an integer
         throw InvalidOptionValueException("TIMEOUT", value);
       }
-    } catch (const std::invalid_argument &e) {
-      // Invalid format, not an integer
-      throw InvalidOptionValueException("TIMEOUT", value);
-    }
-    break;
+      break;
 
-  case Name::TSIZE:
-    // no validation needed
-    break;
+    case Name::TSIZE:
+      try {
+        // uintmax_t tsize =
+        std::stoull(value);
+        // Valid tsize value
+      } catch (const std::invalid_argument &e) {
+        // Invalid format, not an integer
+        throw InvalidOptionValueException("TSIZE", value);
+      }
+      break;
 
-    // case Name::NEW_OPTION: break;
+    case Name::UNSUPPORTED:
+      // Unsupported option
+      break;
   }
 
   // Set option value
@@ -81,21 +90,24 @@ std::vector<uint8_t> Option::MakeRaw() {
 
   // switch (this->name)
   switch (this->name) {
-  case Name::BLKSIZE:
-    raw = StringToVectorNullTerminated("blksize");
-    break;
+    case Name::BLKSIZE:
+      raw = StringToVectorNullTerminated("blksize");
+      break;
 
-  case Name::TIMEOUT:
-    raw = StringToVectorNullTerminated("timeout");
-    break;
+    case Name::TIMEOUT:
+      raw = StringToVectorNullTerminated("timeout");
+      break;
 
-  case Name::TSIZE:
-    raw = StringToVectorNullTerminated("tsize");
-    break;
+    case Name::TSIZE:
+      raw = StringToVectorNullTerminated("tsize");
+      break;
 
-    // case Name::NEW_OPTION:
-    //   raw = StringToVectorNullTerminated("new option");
-    //   break;
+    case Name::UNSUPPORTED:
+      throw UnsupportedOptionException();
+
+      // case Name::NEW_OPTION:
+      //   raw = StringToVectorNullTerminated("new option");
+      //   break;
   }
 
   // Add option value

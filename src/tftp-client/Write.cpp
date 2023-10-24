@@ -10,16 +10,16 @@ void TftpClient::SendWrq() {
   while (retries < numRetries) {
     try {
       // send WRQ packet
-      auto wrq = ReadWritePacket(TftpPacket::Opcode::WRQ, args_.dest_filepath,
+      auto wrq = ReadWritePacket(TftpPacket::Opcode::WRQ, args_.filepath,
                                  ReadWritePacket::Mode::OCTET, args_.options);
       Logger::Log("sending WRQ packet");
-      udp_client_.Send(wrq.MakeRaw());
+      udp_client_.Send(wrq.MakeRaw(), server_address_);
       // receive ACK / OACK / ERROR packet
       std::unique_ptr<sockaddr_in> sender_address(new sockaddr_in);
-      auto response_1 = udp_client_.ReceiveFromAny(sender_address.get());
+      auto response_1 = udp_client_.Receive(sender_address.get());
       // change port to the one that the first server response came from
-      udp_client_.ChangePort(sender_address->sin_port);
-      Logger::Log("New port: " + std::to_string(udp_client_.GetPort()));
+      server_address_.sin_port = sender_address->sin_port;
+      Logger::Log("New port: " + std::to_string(server_address_.sin_port));
       TftpPacket::Opcode opcode_1;
       // check if incomming packet is a correct TFTP packet
       opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
@@ -58,15 +58,16 @@ void TftpClient::SendWrq() {
         Logger::Log("received ERROR packet");
         auto error = ErrorPacket(response_1);
         // TODO: client could send a new WRQ packet without options to retry
-        throw TFTPIllegalOperationError(error.error_message);
+        throw RecievedErrorPacketException("Server responded with error: " +
+                                           error.error_message);
       } else {
         throw TFTPIllegalOperationError("Expected ACK, OACK, or ERROR packet");
       }
       return;  // WRQ sent and ACK / OACK / ERROR received and handled
     } catch (UdpTimeoutException &e) {  // timeout
-      retries++;                        // increment retry counter
-      if (retries == numRetries) {
-        throw;  // rethrow exception
+      retries++;
+      if (retries >= numRetries) {
+        throw TFTPIllegalOperationError("Error: Timeout");
       }
     }
     // every other exception is immidiately considered fatal and is thrown
@@ -74,6 +75,10 @@ void TftpClient::SendWrq() {
 }
 
 void TftpClient::SendData() {
+  // set up std handler
+  StdHandler std_handler(args_.file_mode == ReadWritePacket::Mode::NETASCII
+                             ? DataFormat::NETASCII
+                             : DataFormat::OCTET);
   // send DATA packets
   // a loop that will continue until the last DATA packet containing less than
   // blksize bytes (or 'blksize' option value if specified) of data is sent or
@@ -91,7 +96,7 @@ void TftpClient::SendData() {
   // blksize bytes of data is sent or until the client receives an ERROR packet
   bool last_packet_sent = false;
   while (!last_packet_sent) {
-    auto data = io_handler_.Read(blksize);
+    auto data = std_handler.ReadBytesFromStdin(blksize);
     if (data.size() < blksize) {
       // last packet, set flag to true
       last_packet_sent = true;
@@ -103,11 +108,11 @@ void TftpClient::SendData() {
     while (!ackReceived && retries < numRetries) {
       try {
         // create and send DATA packet
-        DataPacket data_packet(block_number, data);
+        auto data_packet = DataPacket(block_number, data);
         Logger::Log("sending DATA packet");
-        udp_client_.Send(data_packet.MakeRaw());
-        auto response_n = udp_client_.ReceiveFromSpecific();
-        TftpPacket::Opcode opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
+        udp_client_.Send(data_packet.MakeRaw(), server_address_);
+        auto response_n = RecievePacketFromServer();
+        auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
         if (opcode_n == TftpPacket::Opcode::ACK) {  // ACK received
           auto ack_n = AckPacket(response_n);
           if (ack_n.block_number == block_number) {
@@ -115,27 +120,31 @@ void TftpClient::SendData() {
             // number
             ackReceived = true;
             block_number++;
-          } else {
-            // ACK received for the wrong block number, try again
+          } else if (ack_n.block_number <=
+                     block_number) {  // ACK received for an old block
+                                      // number, try again
             retries++;
-            if (retries == numRetries) {
-              throw TFTPIllegalOperationError(
-                  "Expected ACK packet with block number " +
-                  std::to_string(block_number) + ", got block number " +
-                  std::to_string(ack_n.block_number));
-            }
+          } else {  // ACK received for a future block number, throw error
+            throw TFTPIllegalOperationError(
+                "Expected ACK packet with block number " +
+                std::to_string(block_number) + ", got block number " +
+                std::to_string(ack_n.block_number));
           }
         } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
           auto error = ErrorPacket(response_n);
-          throw TFTPIllegalOperationError(error.error_message);
+          throw RecievedErrorPacketException("Server responded with error: " +
+                                             error.error_message);
         }
         // try again
       } catch (UdpTimeoutException &e) {  // timeout
-        retries++;                        // increment retry counter
-        if (retries == numRetries) {
-          throw;  // rethrow exception
+        retries++;
+        if (retries >= numRetries) {
+          throw TFTPIllegalOperationError("Error: Timeout");
         }
       }  // every other exception is immidiately considered fatal and is thrown
+    }
+    if (retries >= numRetries) {
+      throw TFTPIllegalOperationError("Error: Timeout");
     }
   }
 }

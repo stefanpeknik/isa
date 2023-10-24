@@ -69,7 +69,6 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 
   // If filepath is not specified, read from stdin
   if (args.filepath.empty()) {
-    std::getline(std::cin, args.filepath);
     args.mode = TftpClient::TftpClientArgs::TftpMode::WRITE;
   }
 
@@ -78,14 +77,13 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 
 // TODO : check if there is enough space for file to be read
 // TODO : add stuff to tsize option
-
-// TODO : move server_address_ from UDP client to TFTP client
-// TODO : if client recieves response from TID other then the one agreed upon,
-// send ERROR and ignore packet
+// TODO : handle wizard apprentice problem
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);
-  args.options = {Option("timeout", "5")};
+
+  // args.options = {Option("timeout", "5")};
+  args.options = {};
 
   auto client = TftpClient(args);
 

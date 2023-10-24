@@ -1,6 +1,11 @@
 #include "TftpClient.h"
 
 void TftpClient::Read() {
+  // setup file handler
+  Writer writer(args_.dest_filepath,
+                args_.file_mode == ReadWritePacket::Mode::OCTET
+                    ? DataFormat::OCTET
+                    : DataFormat::NETASCII);
   // declare block number
   // - if client sends RRQ with options, but server responds with DATA, then
   // server does not support options and client will move on without options
@@ -12,16 +17,16 @@ void TftpClient::Read() {
   while (retries < numRetries) {
     try {
       // send RRQ packet
-      auto rrq = ReadWritePacket(TftpPacket::Opcode::RRQ, args_.dest_filepath,
+      auto rrq = ReadWritePacket(TftpPacket::Opcode::RRQ, args_.filepath,
                                  ReadWritePacket::Mode::OCTET, args_.options);
       Logger::Log("sending RRQ packet");
-      udp_client_.Send(rrq.MakeRaw());
+      udp_client_.Send(rrq.MakeRaw(), server_address_);
       // receive DATA / OACK / ERROR packet
       std::unique_ptr<sockaddr_in> sender_address(new sockaddr_in);
-      auto response_1 = udp_client_.ReceiveFromAny(sender_address.get());
+      auto response_1 = udp_client_.Receive(sender_address.get());
       // change port to the one that the first server response came from
-      udp_client_.ChangePort(sender_address->sin_port);
-      Logger::Log("New port: " + std::to_string(udp_client_.GetPort()));
+      server_address_.sin_port = sender_address->sin_port;
+      Logger::Log("New port: " + std::to_string(server_address_.sin_port));
       TftpPacket::Opcode opcode_1;
       // check if incomming packet is a correct TFTP packet
       opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
@@ -43,7 +48,7 @@ void TftpClient::Read() {
         // set block number to 1
         block_number = 1;
         // write data to file
-        io_handler_.Write(data.data);
+        writer.WriteFile(data.data);
       } else if (opcode_1 == TftpPacket::Opcode::OACK) {  // server responded
                                                           // with OACK
         Logger::Log("received OACK packet");
@@ -57,6 +62,17 @@ void TftpClient::Read() {
         // use options from OACK packet
         // set up udp_client_ to use options from OACK packet (keep port)
         args_.options = oack.options;
+        // if tsize option is specified, check if there is enough space for file
+        // to be read
+        for (auto option : args_.options) {
+          if (option.name == Option::Name::TSIZE) {
+            // TODO: implement
+            // uintmax_t tsize = std::stoull(option.value);
+            // if (!FileHandler::EnoughSpaceOnDisk("~/", tsize)) {
+            //   throw NotEnoughSpaceOnDiskException();
+            // }
+          }
+        }
         SetupUdpClient();
         // set block number to 0
         block_number = 0;
@@ -65,11 +81,12 @@ void TftpClient::Read() {
         Logger::Log("received ERROR packet");
         auto error = ErrorPacket(response_1);
         // TODO: client could send a new RRQ packet without options to retry
-        throw TFTPIllegalOperationError(error.error_message);
+        throw RecievedErrorPacketException("Server responded with error: " +
+                                           error.error_message);
       } else {
         auto error = ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION,
                                  "Expected DATA, OACK, or ERROR packet");
-        udp_client_.Send(error.MakeRaw());
+        udp_client_.Send(error.MakeRaw(), server_address_);
         throw TFTPIllegalOperationError("Expected DATA, OACK, or ERROR packet");
       }
     } catch (UdpTimeoutException &e) {  // timeout
@@ -106,9 +123,9 @@ void TftpClient::Read() {
           auto ack = AckPacket(block_number);
           Logger::Log("sending ACK packet for block number " +
                       std::to_string(block_number));
-          udp_client_.Send(ack.MakeRaw());
+          udp_client_.Send(ack.MakeRaw(), server_address_);
           // receive DATA packet
-          auto response_n = udp_client_.ReceiveFromSpecific();
+          auto response_n = RecievePacketFromServer();
           TftpPacket::Opcode opcode_n =
               TftpPacket::GetOpcodeFromRaw(response_n);
           if (opcode_n == TftpPacket::Opcode::DATA) {  // DATA received
@@ -116,41 +133,45 @@ void TftpClient::Read() {
             if (data_n.block_number == block_number + 1) {
               // DATA received for the correct block number, increment block
               // number
+              dataReceived = true;
               block_number++;
               Logger::Log("received DATA packet for block number " +
                           std::to_string(data_n.block_number));
               // write data to file
-              io_handler_.Write(data_n.data);
+              writer.WriteFile(data_n.data);
               // check if this is the last DATA packet
               if (data_n.data.size() < blksize) {
                 // last packet, set flag to true
                 last_packet_received = true;
               }
-            } else {
-              // DATA received for the wrong block number, try again
-              Logger::Log("received DATA packet for the wrong block number");
+            } else if (data_n.block_number < block_number + 1) {
+              // DATA received for an old block number, try again
+              Logger::Log("received DATA packet for an old block number");
               retries++;
-              if (retries == numRetries) {
-                throw TFTPIllegalOperationError(
-                    "Expected DATA packet with block number " +
-                    std::to_string(block_number + 1) + ", got block number " +
-                    std::to_string(data_n.block_number));
-              }
+            } else {
+              throw TFTPIllegalOperationError(
+                  "Expected DATA packet with block number " +
+                  std::to_string(block_number + 1) + ", got block number " +
+                  std::to_string(data_n.block_number));
             }
           } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
             Logger::Log("received ERROR packet");
             auto error = ErrorPacket(response_n);
-            throw TFTPIllegalOperationError(error.error_message);
+            throw RecievedErrorPacketException("Server responded with error: " +
+                                               error.error_message);
           }
           // try again
         } catch (UdpTimeoutException &e) {  // timeout
           retries++;
-          if (retries == numRetries) {
-            throw;
+          if (retries >= numRetries) {
+            throw TFTPIllegalOperationError("Error: Timeout");
           }
         } catch (NotEnoughSpaceOnDiskException &e) {
           throw TFTPDiskFullError();
         }
+      }
+      if (retries >= numRetries) {
+        throw TFTPIllegalOperationError("Error: Timeout");
       }
     }
   }

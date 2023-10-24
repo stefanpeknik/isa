@@ -1,15 +1,24 @@
 #include "TftpClient.h"
 
 TftpClient::TftpClient(TftpClientArgs args)
-    : io_handler_(IOHandler(args.mode == TftpClientArgs::TftpMode::READ
-                                ? IOHandler::IO::FILE
-                                : IOHandler::IO::STD)),
-      args_(args),
-      udp_client_(UdpClient(args_.hostname, args_.port)) {
-  if (io_handler_.io_type == IOHandler::IO::FILE) {
-    io_handler_.OpenFile(args_.dest_filepath, std::ios_base::binary);
-  }
+    : args_(args), udp_client_(UdpClient()) {
   SetupUdpClient();
+
+  // get the server address
+  struct hostent *server;
+  if ((server = gethostbyname(args.hostname.c_str())) == NULL) {
+    throw UdpException("Error: Failed to get server address");
+  }
+
+  // initialize the server address structure
+  memset(&server_address_, 0, sizeof(server_address_));
+
+  server_address_.sin_family = AF_INET;  // IPv4
+  // copy the server address to the server_address structure
+  memcpy((char *)&server_address_.sin_addr.s_addr, (char *)server->h_addr,
+         server->h_length);
+  // set the port number
+  server_address_.sin_port = htons(args.port);
 }
 
 void TftpClient::run() {
@@ -25,39 +34,39 @@ void TftpClient::run() {
     }
   } catch (TFTPFileNotFoundError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPAccessViolationError &e) {
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::ACCESS_VIOLATION, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPDiskFullError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::DISK_FULL, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPIllegalOperationError &e) {
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::ILLEGAL_OPERATION, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPUnknownTransferIDError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::UNKNOWN_TID, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPFileAlreadyExistsError &e) {
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::FILE_ALREADY_EXISTS, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TFTPNoSuchUserError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::NO_SUCH_USER, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   } catch (TTFOptionNegotiationError &e) {
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::FAILED_NEGOTIATION, e.what());
-    udp_client_.Send(error.MakeRaw());
+    udp_client_.Send(error.MakeRaw(), server_address_);
     throw;
   }
 }
@@ -88,6 +97,41 @@ void TftpClient::SetupUdpClient() {
     udp_client_.ChangeTimeout({stoi(timeout_ext->value), 0});
     udp_client_.ChangeMaxPacketSize(512);
   }
+}
+
+std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
+  std::vector<uint8_t> buffer;
+
+  // Create a unique_ptr to a sockaddr_in object to store the sender's address
+  std::unique_ptr<sockaddr_in> sender_address(new sockaddr_in);
+
+  // Receive data from any sender and capture the sender's address
+  buffer = udp_client_.Receive(sender_address.get());
+
+  int retries = 0;
+  while (sender_address->sin_port != server_address_.sin_port &&
+         retries < numRetries) {
+    // Keep receiving data until the sender's port matches the server's port or
+    // the number of retries exceeds the maximum number of retries
+
+    // respond with error packet to the unknown sender
+    auto error =
+        ErrorPacket(ErrorPacket::ErrorCode::UNKNOWN_TID, "Unknown sender");
+    try {
+      udp_client_.Send(error.MakeRaw(), *sender_address.get());
+    } catch (UdpException &e) {
+      Logger::Log("Error: Failed to send error packet to unknown sender\n");
+    }
+
+    buffer = udp_client_.Receive(sender_address.get());
+    retries++;
+  }
+
+  if (retries >= numRetries) {
+    throw UdpTimeoutException();  // TODO
+  }
+
+  return buffer;
 }
 
 void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {
@@ -124,6 +168,10 @@ void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {
                 "Server responded with option 'tsize' with value different "
                 "than client requested");
           }
+        }
+        if (oack_option.name == Option::Name::UNSUPPORTED) {
+          throw TFTPIllegalOperationError(
+              "Server responded with unsupported option");
         }
       }
     }

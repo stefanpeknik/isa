@@ -1,7 +1,7 @@
 #include "UdpServer.h"
 
 UdpServer::UdpServer(int port_number) {
-  ChangePort(port_number);
+  port_number_ = port_number;
 
   server_socket_ = socket(AF_INET, SOCK_DGRAM, 0);
   if (server_socket_ == -1) {
@@ -20,17 +20,10 @@ UdpServer::UdpServer(int port_number) {
 
 UdpServer::~UdpServer() { close(server_socket_); }
 
-void UdpServer::ChangePort(int port_number) {
-  port_number_ = port_number;
-  server_address_.sin_port = htons(port_number_);
-}
-
-int UdpServer::GetPort() { return port_number_; }
-
 bool UdpServer::Receive(std::vector<uint8_t> &data,
-                        sockaddr_in &sender_address) {
+                        struct sockaddr_in &sender_address) {
   socklen_t sender_address_len = sizeof(sender_address);
-  data.resize(maxPacketSize_);  // Max packet size
+  data = std::vector<uint8_t>(maxPacketSize_);  // Max packet size is 65468 bytes
   ssize_t bytes_received =
       recvfrom(server_socket_, data.data(), data.size(), 0,
                (struct sockaddr *)&sender_address, &sender_address_len);

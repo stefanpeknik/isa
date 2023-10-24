@@ -6,13 +6,14 @@
 #include <string>
 #include <vector>
 
+#include "../utils/utils.h"
 #include "Option.h"
 #include "TftpPacket.h"
-#include "utils/utils.h"
+
 
 class ReadWritePacket : public TftpPacket {
-public:
-  enum class Mode { NETASCII, OCTET }; // mail is not supported
+ public:
+  enum class Mode { NETASCII, OCTET };  // mail is not supported
 
   ReadWritePacket(TftpPacket::Opcode opcode, std::string filepath, Mode mode,
                   std::vector<Option> options = {});
@@ -29,8 +30,8 @@ public:
 
   std::vector<uint8_t> MakeRaw();
 
-private:
+ private:
   std::string ModeToString(ReadWritePacket::Mode mode);
 };
 
-#endif // ReadWritePacket_H
+#endif  // ReadWritePacket_H

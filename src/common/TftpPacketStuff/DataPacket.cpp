@@ -1,7 +1,8 @@
 #include "DataPacket.h"
 
 DataPacket::DataPacket(uint16_t block_number, std::vector<uint8_t> data)
-    : TftpPacket(TftpPacket::Opcode::DATA), block_number(block_number),
+    : TftpPacket(TftpPacket::Opcode::DATA),
+      block_number(block_number),
       data(data) {}
 
 DataPacket::DataPacket(std::vector<uint8_t> raw)

@@ -21,9 +21,7 @@ class UdpServer {
   UdpServer(int port_number);
   ~UdpServer();
 
-  void ChangePort(int port_number);
-  int GetPort();
-  bool Receive(std::vector<uint8_t>& data, sockaddr_in& sender_address);
+  bool Receive(std::vector<uint8_t> &data, sockaddr_in &sender_address);
   void ChangeTimeout(struct timeval timeout);
   void ChangeMaxPacketSize(uint16_t maxPacketSize);
 
@@ -32,10 +30,7 @@ class UdpServer {
   int port_number_;
   struct sockaddr_in server_address_;
   socklen_t sender_address_len;
-  int16_t maxPacketSize_ =
-      2 + 2 +
-      512;  // the largest packet size in the TFTP protocol is 516 bytes: opcode
-            // (2 bytes) + block number (2 bytes) + data (512 bytes)
+  int16_t maxPacketSize_ = 1024; // 
 };
 
 #endif  // UdpServer_h

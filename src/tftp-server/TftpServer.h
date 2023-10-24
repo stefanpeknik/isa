@@ -25,13 +25,12 @@ class TftpServer {
 
   void run();
 
-  const int numRetries = 5;
-
  private:
   TftpServerArgs args_;
   UdpServer udp_server_;
 
   void StartCommsWithClient(std::string client_hostname, int client_port,
+                            std::string root_dirpath,
                             std::vector<uint8_t> intro_packet);
 };
 

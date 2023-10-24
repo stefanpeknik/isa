@@ -10,3 +10,7 @@ tftp-client
 test-server.py
 test
 test.cpp
+downloaded.txt
+read-from-server.txt
+example.txt
+testing

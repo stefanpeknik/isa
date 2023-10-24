@@ -86,7 +86,7 @@ std::vector<Option> ReadWritePacket::ParseOptions(
     Option new_option(option_name, option_value);
 
     // Check if option name is already in parsed_options
-    for (auto &option : parsed_options) {
+    for (auto option : parsed_options) {
       if (option.name == new_option.name) {
         throw TFTPIllegalOperationError(
             "TFTP Illegal Operation: duplicate option name " + option_name);
