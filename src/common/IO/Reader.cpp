@@ -22,7 +22,7 @@ void Reader::OpenFile() {
   }
 }
 
-std::vector<uint8_t> Reader::ReadFile(int num_bytes) {
+std::vector<uint8_t> Reader::ReadFile(unsigned int num_bytes) {
   if (!FileExists(filepath_)) {
     throw FileDoesNotExistException(filepath_);
   }
@@ -31,18 +31,38 @@ std::vector<uint8_t> Reader::ReadFile(int num_bytes) {
     OpenFile();
   }
 
-  std::vector<uint8_t> buffer(num_bytes);
-  file_.read((char*)buffer.data(), num_bytes);
-
-  if (file_.fail() && !file_.eof()) {
-    throw FailedToReadFromFileException(file_.getloc().name());
+  // read overflow buffer first
+  std::vector<uint8_t> bytes;
+  if (overflow_buffer_.size() > num_bytes) {
+    bytes = std::vector<uint8_t>(overflow_buffer_.begin(),
+                                 overflow_buffer_.begin() + num_bytes);
+    overflow_buffer_.erase(overflow_buffer_.begin(),
+                           overflow_buffer_.begin() + num_bytes);
+  } else {
+    bytes =
+        std::vector<uint8_t>(overflow_buffer_.begin(), overflow_buffer_.end());
+    overflow_buffer_.clear();
   }
 
-  buffer.resize(
-      file_
-          .gcount());  // Resize the vector to the number of bytes actually read
+  if (bytes.size() < num_bytes) {
+    // read the rest of the bytes from the file
+    std::vector<uint8_t> file_bytes(num_bytes - bytes.size());
+    file_.read((char *)file_bytes.data(), num_bytes - bytes.size());
+    bytes.insert(bytes.end(), file_bytes.begin(), file_bytes.end());
+  }
 
-  if (mode_ == DataFormat::NETASCII)  // if netascii, format the data
-    return FormatToNETASCII(buffer);
-  return buffer;  // else return the buffer as is
+  if (mode_ == DataFormat::NETASCII) {  // if netascii, format the data
+    bytes = FormatToNETASCII(bytes);
+    if (bytes.size() > num_bytes) {
+      // if the buffer is larger than the number of bytes requested, store the
+      // overflow in the overflow buffer
+      overflow_buffer_ =
+          std::vector<uint8_t>(bytes.begin() + num_bytes, bytes.end());
+      bytes.resize(num_bytes);
+    } else {
+      overflow_buffer_ = {};
+    }
+  }
+
+  return bytes;
 }

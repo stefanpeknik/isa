@@ -9,12 +9,14 @@ class Reader : public FileHandler {
   ~Reader();
 
   void OpenFile();
-  std::vector<uint8_t> ReadFile(int num_bytes);
+  std::vector<uint8_t> ReadFile(unsigned int num_bytes);
 
  private:
   std::string filepath_;
   std::fstream file_;
   DataFormat mode_;
-};
 
+  // buffer for when ReadFile() shall return more bytes than requested
+  std::vector<uint8_t> overflow_buffer_ = {};
+};
 #endif  // Reader_h
