@@ -17,7 +17,7 @@ void PrintUsageAndExit() {
          "If not specified, data will be read from stdin (upload)\n"
          "-t Path where the file will be stored on the remote server or "
          "locally\n";
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
@@ -70,6 +70,9 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
   // If filepath is not specified, read from stdin
   if (args.filepath.empty()) {
     args.mode = TftpClient::TftpClientArgs::TftpMode::WRITE;
+  } else if (args.filepath.length() > FILEPATH_MAX_LENGTH) {
+    std::cerr << "Error: Filepath is too long" << std::endl;
+    exit(EXIT_FAILURE);
   }
 
   return args;
@@ -91,8 +94,8 @@ int main(int argc, char *argv[]) {
     client.run();
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
-    return 1;
+    return EXIT_FAILURE;
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
