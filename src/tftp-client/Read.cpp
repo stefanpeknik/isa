@@ -115,9 +115,8 @@ void TftpClient::Read() {
     // received or until the client receives an ERROR packet
     bool last_packet_received = false;
     while (!last_packet_received) {
-      retries = 0;
       auto dataReceived = false;
-      while (!dataReceived && retries < numRetries) {
+      while (!dataReceived) {
         try {
           // send ACK packet
           auto ack = AckPacket(block_number);
@@ -162,16 +161,10 @@ void TftpClient::Read() {
           }
           // try again
         } catch (UdpTimeoutException &e) {  // timeout
-          retries++;
-          if (retries >= numRetries) {
-            throw TFTPIllegalOperationError("Error: Timeout");
-          }
+          throw TFTPIllegalOperationError("Error: Timeout");
         } catch (NotEnoughSpaceOnDiskException &e) {
           throw TFTPDiskFullError();
         }
-      }
-      if (retries >= numRetries) {
-        throw TFTPIllegalOperationError("Error: Timeout");
       }
     }
   }

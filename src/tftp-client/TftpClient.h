@@ -32,8 +32,6 @@ class TftpClient {
 
   void run();
 
-  const int numRetries = 5;
-
  private:
   TftpClientArgs args_;
   UdpClient udp_client_;
