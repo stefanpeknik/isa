@@ -1,11 +1,11 @@
 #ifndef TftpPacket_H
 #define TftpPacket_H
 
+#include <cstdint>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 class TftpPacket {
  public:
@@ -39,13 +39,18 @@ class TFTPException : public std::exception {
   std::string message;
 };
 
-class TFTPFileNotFoundError : public TFTPException {
+class TFTPUnknownError : public TFTPException {  // 0
+ public:
+  TFTPUnknownError() : TFTPException("Unknown error.") {}
+};
+
+class TFTPFileNotFoundError : public TFTPException {  // 1
  public:
   TFTPFileNotFoundError(const std::string& filename)
       : TFTPException("File not found: " + filename) {}
 };
 
-class TFTPAccessViolationError : public TFTPException {
+class TFTPAccessViolationError : public TFTPException {  // 2
  public:
   TFTPAccessViolationError()
       : TFTPException(
@@ -53,14 +58,14 @@ class TFTPAccessViolationError : public TFTPException {
             "file.") {}
 };
 
-class TFTPDiskFullError : public TFTPException {
+class TFTPDiskFullError : public TFTPException {  // 3
  public:
   TFTPDiskFullError()
       : TFTPException(
             "Disk full or allocation exceeded: Unable to write the file.") {}
 };
 
-class TFTPIllegalOperationError : public TFTPException {
+class TFTPIllegalOperationError : public TFTPException {  // 4
  public:
   TFTPIllegalOperationError(const std::string& operation)
       : TFTPException("Illegal TFTP operation: " + operation) {}
@@ -74,13 +79,13 @@ class TFTPUnknownTransferIDError : public TFTPException {
   }
 };
 
-class TFTPFileAlreadyExistsError : public TFTPException {
+class TFTPFileAlreadyExistsError : public TFTPException {  // 6
  public:
   TFTPFileAlreadyExistsError(const std::string& filename)
       : TFTPException("File already exists: " + filename) {}
 };
 
-class TFTPNoSuchUserError : public TFTPException {
+class TFTPNoSuchUserError : public TFTPException {  // 7
  public:
   TFTPNoSuchUserError()
       : TFTPException(
@@ -88,7 +93,7 @@ class TFTPNoSuchUserError : public TFTPException {
             "access.") {}
 };
 
-class TTFOptionNegotiationError : public TFTPException {
+class TTFOptionNegotiationError : public TFTPException {  // 8
  public:
   TTFOptionNegotiationError() : TFTPException("Option negotiation failed.") {}
 };

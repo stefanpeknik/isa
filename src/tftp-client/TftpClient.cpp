@@ -110,7 +110,7 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
 
   int retries = 0;
   while (sender_address->sin_port != server_address_.sin_port &&
-         retries < numRetries) {
+         retries < MAX_RETRIES) {
     // Keep receiving data until the sender's port matches the server's port or
     // the number of retries exceeds the maximum number of retries
 
@@ -127,7 +127,7 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
     retries++;
   }
 
-  if (retries >= numRetries) {
+  if (retries >= MAX_RETRIES) {
     throw UdpTimeoutException();  // TODO
   }
 

@@ -32,6 +32,8 @@ class TftpClient {
 
   void run();
 
+  const int MAX_RETRIES = 5;
+
  private:
   TftpClientArgs args_;
   UdpClient udp_client_;

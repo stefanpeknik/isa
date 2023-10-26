@@ -13,9 +13,10 @@ class FileHandler {
  public:
   virtual void OpenFile() = 0;
 
-  static bool EnoughSpaceOnDisk(std::string root_dir, uintmax_t num_bytes);
   static bool FileExists(std::string filepath);
   static void DeleteFile(std::string filepath);
+  static bool isFilePathUnderDirectory(std::string filePath,
+                                       std::string directoryPath);
 };
 
 class FileHandlerException : public std::exception {
@@ -56,12 +57,6 @@ class DataInWrongFormatException : public FileHandlerException {
  public:
   DataInWrongFormatException()
       : FileHandlerException("Error: Data in wrong format") {}
-};
-
-class NotEnoughSpaceOnDiskException : public FileHandlerException {
- public:
-  NotEnoughSpaceOnDiskException()
-      : FileHandlerException("Error: Not enough space on disk") {}
 };
 
 #endif  // FileHandler_h

@@ -28,12 +28,12 @@ class UdpClient {
   void ChangeMaxPacketSize(uint16_t maxPacketSize);
   void ChangeTimeout(struct timeval timeout);
   void IncreaseTimeout(uint16_t multiplier = 2);
-
-  const int MAX_RETRIES = 5;
+  void TimeoutReset();
 
  private:
   int client_socket_;
-  struct timeval timeout_ = {1, 0};  // default timeout is 1 second
+  struct timeval default_timeout_ = {1, 0};
+  struct timeval timeout_ = default_timeout_;
   int16_t maxPacketSize_ =
       2 + 2 +
       512;  // the largest packet size in the TFTP protocol is 516 bytes: opcode

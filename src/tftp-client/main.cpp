@@ -4,7 +4,8 @@
 
 #include "TftpClient.h"
 
-int FILEPATH_MAX_LENGTH = 400;
+long unsigned int FILEPATH_MAX_LENGTH =
+    500;  // to fit in default max packet size of 516 bytes
 
 void PrintUsageAndExit() {
   std::cout
@@ -79,14 +80,13 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 }
 
 // TODO : check if there is enough space for file to be read
-// TODO : add stuff to tsize option
-// TODO : handle wizard apprentice problem
+// TODO : add stuff to tsize option : count bytes read and bytes written
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);
 
-  // args.options = {Option("timeout", "5")};
-  args.options = {};
+  args.options = {Option("timeout", "10")};
+  // args.options = {};
 
   auto client = TftpClient(args);
 

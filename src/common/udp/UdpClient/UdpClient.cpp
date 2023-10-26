@@ -7,7 +7,7 @@ UdpClient::UdpClient() {
   }
 
   // set socket timeout
-  ChangeTimeout(timeout_);
+  ChangeTimeout(default_timeout_);
 }
 
 UdpClient::~UdpClient() {
@@ -34,12 +34,9 @@ std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {
   socklen_t senderlen = sizeof(*sender_address);
 
   // Receiving the data and capturing sender's address and port
-  ssize_t bytes_received = -1;
-  for (uint16_t retry = 0; retry < MAX_RETRIES && bytes_received < 0; retry++) {
-    bytes_received = recvfrom(client_socket_, buffer.data(), buffer.size(), 0,
-                              (struct sockaddr *)sender_address, &senderlen);
-  }
-
+  ssize_t bytes_received =
+      recvfrom(client_socket_, buffer.data(), buffer.size(), 0,
+               (struct sockaddr *)sender_address, &senderlen);
   if (bytes_received < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       // Handle the timeout
@@ -68,6 +65,11 @@ void UdpClient::ChangeTimeout(struct timeval timeout) {
 }
 
 void UdpClient::IncreaseTimeout(uint16_t multiplier) {
-  timeout_.tv_sec *= multiplier;  // increase timeout by multiplier
+  timeout_.tv_sec *= multiplier;
+  ChangeTimeout(timeout_);
+}
+
+void UdpClient::TimeoutReset() {
+  timeout_ = default_timeout_;
   ChangeTimeout(timeout_);
 }

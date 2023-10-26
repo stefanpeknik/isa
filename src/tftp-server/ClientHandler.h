@@ -12,7 +12,7 @@ class ClientHandler {
 
   void FollowOnIntroPacket(std::vector<uint8_t> intro_packet);
 
-  const int numRetries = 5;
+  const int MAX_RETRIES = 5;
 
  private:
   UdpClient udp_client_;

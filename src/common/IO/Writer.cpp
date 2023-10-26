@@ -28,6 +28,9 @@ void Writer::WriteFile(std::vector<uint8_t> data) {
 
   file_.write((char*)data.data(), data.size());
 
+  // force the buffer to be written to the file
+  file_.flush();
+
   if (file_.fail()) {
     throw FailedToWriteToFileException(file_.getloc().name());
   }
