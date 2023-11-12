@@ -25,6 +25,9 @@ class ClientHandler {
   std::vector<uint8_t> RecievePacketFromClient();
 
   std::vector<Option> NegotiateOptions(std::vector<Option> options);
+
+  void LogPotentialTftpPacket(struct sockaddr_in sender_address,
+                              std::vector<uint8_t> buffer);
 };
 
 class RecievedErrorPacketException : public std::exception {

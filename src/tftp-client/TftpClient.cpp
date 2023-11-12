@@ -114,6 +114,9 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
     // Keep receiving data until the sender's port matches the server's port or
     // the number of retries exceeds the maximum number of retries
 
+    // Log the received packet if it is a valid TFTP packet
+    LogPotentialTftpPacket(*sender_address.get(), buffer);
+
     // respond with error packet to the unknown sender
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::UNKNOWN_TID, "Unknown sender");
@@ -131,7 +134,37 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
     throw UdpTimeoutException();  // TODO
   }
 
+  // Log the received packet if it is a valid TFTP packet
+  LogPotentialTftpPacket(*sender_address.get(), buffer);
+
   return buffer;
+}
+
+void TftpClient::LogPotentialTftpPacket(struct sockaddr_in sender_address,
+                                        std::vector<uint8_t> buffer) {
+  // Log the received packet if it is a valid TFTP packet
+  try {
+    auto opcode = TftpPacket::GetOpcodeFromRaw(buffer);
+    if (opcode == TftpPacket::Opcode::RRQ) {
+      Logger::LogRRQ(sender_address, ReadWritePacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::WRQ) {
+      Logger::logWRQ(sender_address, ReadWritePacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::DATA) {
+      Logger::logDATA(sender_address, udp_client_.GetLocalPort(),
+                      DataPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::ACK) {
+      Logger::logACK(sender_address, AckPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::ERROR) {
+      Logger::logERROR(sender_address, udp_client_.GetLocalPort(),
+                       ErrorPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::OACK) {
+      Logger::logOACK(sender_address, OackPacket(buffer));
+    } else {
+      // invalid opcode
+    }
+  } catch (const std::exception &) {
+    // ignore any exceptions
+  }
 }
 
 void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {

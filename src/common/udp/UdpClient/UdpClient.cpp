@@ -73,3 +73,13 @@ void UdpClient::TimeoutReset() {
   timeout_ = default_timeout_;
   ChangeTimeout(timeout_);
 }
+
+uint16_t UdpClient::GetLocalPort() {
+  struct sockaddr_in local_address;
+  socklen_t addr_len = sizeof(local_address);
+  if (getsockname(client_socket_, (struct sockaddr *)&local_address,
+                  &addr_len) != 0) {
+    throw UdpException("Error: Failed to get local port");
+  }
+  return ntohs(local_address.sin_port);
+}

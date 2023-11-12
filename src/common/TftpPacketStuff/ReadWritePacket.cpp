@@ -121,7 +121,7 @@ std::vector<uint8_t> ReadWritePacket::MakeRaw() {
   raw.insert(raw.end(), filepathVec.begin(), filepathVec.end());
 
   // Add mode
-  auto modeVec = StringToVectorNullTerminated(ModeToString(this->mode));
+  auto modeVec = StringToVectorNullTerminated(ModeToString());
   raw.insert(raw.end(), modeVec.begin(), modeVec.end());
 
   // Add options
@@ -133,17 +133,10 @@ std::vector<uint8_t> ReadWritePacket::MakeRaw() {
   return raw;
 }
 
-std::string ReadWritePacket::ModeToString(ReadWritePacket::Mode mode) {
-  switch (mode) {
-    case ReadWritePacket::Mode::NETASCII:
-      return "netascii";
-      break;
-
-    case ReadWritePacket::Mode::OCTET:
-      return "octet";
-      break;
-  }
-
-  // dummy return
-  return "netascii";
+std::string ReadWritePacket::ModeToString() {
+  if (mode == ReadWritePacket::Mode::NETASCII) {
+    return "netascii";
+  }  // else if (mode == ReadWritePacket::Mode::OCTET) {
+  return "octet";
+  // }
 }

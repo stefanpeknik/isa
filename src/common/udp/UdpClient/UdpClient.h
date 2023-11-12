@@ -30,6 +30,9 @@ class UdpClient {
   void IncreaseTimeout(uint16_t multiplier = 2);
   void TimeoutReset();
 
+  
+  uint16_t GetLocalPort();
+
  private:
   int client_socket_;
   struct timeval default_timeout_ = {1, 0};

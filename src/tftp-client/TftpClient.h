@@ -48,6 +48,9 @@ class TftpClient {
   void SetupUdpClient();
   std::vector<uint8_t> RecievePacketFromServer();
   void ValidateOptionsInOack(std::vector<Option> oack_options);
+
+  void LogPotentialTftpPacket(struct sockaddr_in sender_address,
+                           std::vector<uint8_t> buffer);
 };
 
 class RecievedErrorPacketException : public std::exception {

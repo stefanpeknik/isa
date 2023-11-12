@@ -4,7 +4,7 @@
 #include "TftpPacket.h"
 
 class ErrorPacket : public TftpPacket {
-public:
+ public:
   enum class ErrorCode {
     NOT_DEFINED = 0,
     FILE_NOT_FOUND = 1,
@@ -28,4 +28,4 @@ public:
   std::vector<uint8_t> MakeRaw();
 };
 
-#endif // ErrorPacket_h
+#endif  // ErrorPacket_h

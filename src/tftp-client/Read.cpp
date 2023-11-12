@@ -31,9 +31,9 @@ void TftpClient::Read() {
       // change port to the one that the first server response came from
       server_address_.sin_port = sender_address->sin_port;
       Logger::Log("New port: " + std::to_string(server_address_.sin_port));
-      TftpPacket::Opcode opcode_1;
+      LogPotentialTftpPacket(server_address_, response_1);
       // check if incomming packet is a correct TFTP packet
-      opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
+      auto opcode_1 = TftpPacket::GetOpcodeFromRaw(response_1);
       // check if opcode is DATA, OACK, or ERROR
       if (opcode_1 == TftpPacket::Opcode::DATA) {  // server responded with DATA
         Logger::Log("received DATA packet");

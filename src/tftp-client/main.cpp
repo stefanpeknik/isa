@@ -80,7 +80,9 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 }
 
 // TODO : check if there is enough space for file to be read
-// TODO : add stuff to tsize option : count bytes read and bytes written
+// TODO : handle ctrl+c
+// TODO : handle reformatting back from NETASCII
+// TODO : check how recvfrom behaves if long message is recieved but only part is read
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);

@@ -34,10 +34,12 @@ all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
 clientr: $(CLIENT_EXEC)
 	mkdir -p $(CLIENT_DIR)
+	rm -f $(CLIENT_DIR)/$(FILE_FROM_SERVER)
 	./$(CLIENT_EXEC) -h $(HOSTNAME) -p $(PORT) -f $(FILE_ON_SERVER) -t $(CLIENT_DIR)/$(FILE_FROM_SERVER) 
 
 clientw: $(CLIENT_EXEC)
 	mkdir -p $(CLIENT_DIR)
+	rm -f $(SERVER_DIR)/$(FILE_FROM_CLIENT)
 	./$(CLIENT_EXEC) -h $(HOSTNAME) -p $(PORT) -t $(FILE_FROM_CLIENT) < $(CLIENT_DIR)/$(FILE_ON_CLIENT)
 
 server: $(SERVER_EXEC)

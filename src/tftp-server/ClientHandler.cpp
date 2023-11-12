@@ -14,6 +14,7 @@ ClientHandler::ClientHandler(std::string hostname, int port,
 }
 
 void ClientHandler::FollowOnIntroPacket(std::vector<uint8_t> intro_packet) {
+  LogPotentialTftpPacket(client_address_, intro_packet);
   // Parse the intro packet
   TftpPacket::Opcode opcode_1;
   try {  // try to get the opcode
@@ -82,14 +83,36 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   if (!FileHandler::isFilePathUnderDirectory(read_file, root_dirpath_)) {
     throw TFTPAccessViolationError();
   }
-  Reader reader(root_dirpath_ + "/" + rrq.filepath,
-                rrq.mode == ReadWritePacket::Mode::OCTET
-                    ? DataFormat::OCTET
-                    : DataFormat::NETASCII);
+  auto real_path = root_dirpath_ + "/" + rrq.filepath;
+  auto read_mode = rrq.mode == ReadWritePacket::Mode::OCTET
+                       ? DataFormat::OCTET
+                       : DataFormat::NETASCII;
+  Reader reader(real_path, read_mode);
   Logger::Log("read file: " + read_file);
   // update io handler to use the requested
   // negotiate options
   auto negotiated_options = NegotiateOptions(rrq.options);
+  uint16_t blksize = 512;
+  // if 'blksize' option is specified, set blksize to the value of 'blksize'
+  // option
+  for (auto option : negotiated_options) {
+    if (option.name == Option::Name::BLKSIZE) {
+      blksize = stoi(option.value);
+    }
+  }
+  // if 'tsize' option is specified, read the file to get its size
+  for (auto option : negotiated_options) {
+    if (option.name == Option::Name::TSIZE) {
+      Reader reader_for_tsize(real_path, read_mode);
+      auto bytes_read = 0;
+      do {
+        auto data = reader_for_tsize.ReadFile(blksize);
+        bytes_read += data.size();
+      } while (bytes_read == blksize);
+      option.value = std::to_string(bytes_read);
+      // Reader destructor closes the file
+    }
+  }
 
   // if options were negotiated, send oack and get ack
   if (rrq.options.size() > 0) {
@@ -104,7 +127,8 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
     while (!ackReceived && retries < MAX_RETRIES) {
       try {
         auto packet = RecievePacketFromClient();
-        if (TftpPacket::GetOpcodeFromRaw(packet) == TftpPacket::Opcode::ACK) {
+        auto opcode = TftpPacket::GetOpcodeFromRaw(packet);
+        if (opcode == TftpPacket::Opcode::ACK) {
           auto ack = AckPacket(packet);
           if (ack.block_number != 0) {
             throw TFTPIllegalOperationError("Expected block number 0");
@@ -112,12 +136,10 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
           ackReceived = true;
           Logger::Log("received ACK packet with block number " +
                       std::to_string(ack.block_number));
-        } else if (TftpPacket::GetOpcodeFromRaw(packet) ==
-                   TftpPacket::Opcode::RRQ) {
+        } else if (opcode == TftpPacket::Opcode::RRQ) {
           retries++;
           Logger::Log("received RRQ packet again, retry");
-        } else if (TftpPacket::GetOpcodeFromRaw(packet) ==
-                   TftpPacket::Opcode::ERROR) {
+        } else if (opcode == TftpPacket::Opcode::ERROR) {
           auto error = ErrorPacket(packet);
           throw RecievedErrorPacketException("Client responded with error: " +
                                              error.error_message);
@@ -137,14 +159,6 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   }
 
   int block_number = 1;
-  uint16_t blksize = 512;
-  // if 'blksize' option is specified, set blksize to the value of 'blksize'
-  // option
-  for (auto option : negotiated_options) {
-    if (option.name == Option::Name::BLKSIZE) {
-      blksize = stoi(option.value);
-    }
-  }
   bool last_packet_sent = false;
   // keep sending data packets until the file is completely sent
   while (!last_packet_sent) {
@@ -421,7 +435,7 @@ std::vector<Option> ClientHandler::NegotiateOptions(
         negotiated_options.push_back(option);
         break;
       case Option::Name::TSIZE:
-        // TODO: implement
+        // has to be implemented outside of this function
         negotiated_options.push_back(option);
         break;
       case Option::Name::UNSUPPORTED:  // ignore
@@ -447,6 +461,9 @@ std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
     // Keep receiving data until the sender's port matches the client's
     // port or the number of retries exceeds the maximum number of retries
 
+    // Log the received packet if it is a valid TFTP packet
+    LogPotentialTftpPacket(*sender_address.get(), buffer);
+
     // respond with error packet to the unknown sender
     auto error =
         ErrorPacket(ErrorPacket::ErrorCode::UNKNOWN_TID, "Unknown sender");
@@ -464,5 +481,35 @@ std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
     throw UdpTimeoutException();  // TODO
   }
 
+  // Log the received packet if it is a valid TFTP packet
+  LogPotentialTftpPacket(*sender_address.get(), buffer);
+
   return buffer;
+}
+
+void ClientHandler::LogPotentialTftpPacket(struct sockaddr_in sender_address,
+                                           std::vector<uint8_t> buffer) {
+  // Log the received packet if it is a valid TFTP packet
+  try {
+    auto opcode = TftpPacket::GetOpcodeFromRaw(buffer);
+    if (opcode == TftpPacket::Opcode::RRQ) {
+      Logger::LogRRQ(sender_address, ReadWritePacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::WRQ) {
+      Logger::logWRQ(sender_address, ReadWritePacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::DATA) {
+      Logger::logDATA(sender_address, udp_client_.GetLocalPort(),
+                      DataPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::ACK) {
+      Logger::logACK(sender_address, AckPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::ERROR) {
+      Logger::logERROR(sender_address, udp_client_.GetLocalPort(),
+                       ErrorPacket(buffer));
+    } else if (opcode == TftpPacket::Opcode::OACK) {
+      Logger::logOACK(sender_address, OackPacket(buffer));
+    } else {
+      // invalid opcode
+    }
+  } catch (const std::exception &) {
+    // ignore any exceptions
+  }
 }

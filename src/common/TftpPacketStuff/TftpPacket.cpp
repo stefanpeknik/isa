@@ -26,6 +26,10 @@ TftpPacket::Opcode TftpPacket::ParseOpcode(std::vector<uint8_t> opcode) {
 }
 
 TftpPacket::Opcode TftpPacket::GetOpcodeFromRaw(std::vector<uint8_t> raw) {
+  if (raw.size() < 2) {
+    throw TFTPIllegalOperationError(
+        "Invalid packet: packet is too short to contain opcode");
+  }
   return TftpPacket::ParseOpcode(
       std::vector<uint8_t>(raw.begin(), raw.begin() + 2));
 }

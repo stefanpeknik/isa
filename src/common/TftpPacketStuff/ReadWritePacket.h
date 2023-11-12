@@ -10,7 +10,6 @@
 #include "Option.h"
 #include "TftpPacket.h"
 
-
 class ReadWritePacket : public TftpPacket {
  public:
   enum class Mode { NETASCII, OCTET };  // mail is not supported
@@ -30,8 +29,7 @@ class ReadWritePacket : public TftpPacket {
 
   std::vector<uint8_t> MakeRaw();
 
- private:
-  std::string ModeToString(ReadWritePacket::Mode mode);
+  std::string ModeToString();
 };
 
 #endif  // ReadWritePacket_H
