@@ -27,12 +27,8 @@ UdpClient::~UdpClient() {
 
 void UdpClient::Send(std::vector<uint8_t> data, sockaddr_in reciever_address) {
   // Sending the data
-  ssize_t bytes_sent =
-      sendto(client_socket_, data.data(), data.size(), 0,
+  sendto(client_socket_, data.data(), data.size(), 0,
              (struct sockaddr *)&reciever_address, sizeof(reciever_address));
-  if (bytes_sent < 0) {
-    throw UdpException("Error sending data");
-  }
 }
 
 std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {

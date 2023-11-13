@@ -9,10 +9,12 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <csignal>
 
 #include "../common/logger.h"
 #include "../common/udp/UdpServer/UdpServer.h"
 #include "ClientHandler.h"
+#include "sigint.h"
 
 class TftpServer {
  public:
@@ -32,6 +34,7 @@ class TftpServer {
   void StartCommsWithClient(std::string client_hostname, int client_port,
                             std::string root_dirpath,
                             std::vector<uint8_t> intro_packet);
+
 };
 
 #endif  // TftpServer_h

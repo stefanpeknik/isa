@@ -445,6 +445,14 @@ std::vector<Option> ClientHandler::NegotiateOptions(
   return negotiated_options;
 }
 
+void ClientHandler::CheckForSigint() {
+  if (SIGINT_RECEIVED.load() == false) return;
+
+  Logger::Log("SIGINT received, exiting");
+  // TODO 
+  
+}
+
 std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
   std::vector<uint8_t> buffer;
 

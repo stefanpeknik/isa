@@ -1,10 +1,12 @@
 #include "TftpServer.h"
 
 TftpServer::TftpServer(TftpServerArgs args)
-    : args_(args), udp_server_(UdpServer(args.port)) {}
+    : args_(args), udp_server_(UdpServer(args.port)) {
+      signal(SIGINT, SigintHandler);
+    }
 
 void TftpServer::run() {
-  while (true) {
+  while (SIGINT_RECEIVED.load() == false) {
     std::vector<uint8_t> data;
     struct sockaddr_in sender_address;
     while (!udp_server_.Receive(data, sender_address))

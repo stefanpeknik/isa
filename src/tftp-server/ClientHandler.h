@@ -5,6 +5,7 @@
 #include "../common/TftpCommon.h"
 #include "../common/logger.h"
 #include "../common/udp/UdpClient/UdpClient.h"
+#include "sigint.h"
 
 class ClientHandler {
  public:
@@ -25,6 +26,8 @@ class ClientHandler {
   std::vector<uint8_t> RecievePacketFromClient();
 
   std::vector<Option> NegotiateOptions(std::vector<Option> options);
+
+  void CheckForSigint();
 
   void LogPotentialTftpPacket(struct sockaddr_in sender_address,
                               std::vector<uint8_t> buffer);

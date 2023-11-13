@@ -3,7 +3,7 @@
 std::vector<uint8_t> FormatToNETASCII(std::vector<uint8_t> data) {
   std::vector<uint8_t> formattedData;
 
-  for (size_t i = 0; i < data.size(); i++) {
+  for (std::size_t i = 0; i < data.size(); i++) {
     if (data[i] == '\r') {
       // Check if the next character is '\n'
       if (i + 1 < data.size() && data[i + 1] == '\n') {
@@ -27,7 +27,7 @@ std::vector<uint8_t> FormatToNETASCII(std::vector<uint8_t> data) {
 
 std::vector<uint8_t> FormatFromNETASCII(std::vector<uint8_t> data) {
   std::vector<uint8_t> result;
-  for (size_t i = 0; i < data.size(); ++i) {
+  for (std::size_t i = 0; i < data.size(); ++i) {
     if (i < data.size() - 1 && data[i] == '\r') {
       if (data[i + 1] == '\n') {
         result.push_back('\n');
