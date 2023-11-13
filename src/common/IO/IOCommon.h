@@ -10,5 +10,6 @@ enum class DataFormat {
 };
 
 std::vector<uint8_t> FormatToNETASCII(std::vector<uint8_t> data);
+std::vector<uint8_t> FormatFromNETASCII(std::vector<uint8_t> data);
 
 #endif  // IOCommon_h

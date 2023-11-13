@@ -2,6 +2,7 @@
 #define UdpClient_h
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -17,7 +18,7 @@
 #include "../UdpCommon.h"
 
 class UdpClient {
- public:
+public:
   UdpClient();
 
   ~UdpClient();
@@ -30,17 +31,16 @@ class UdpClient {
   void IncreaseTimeout(uint16_t multiplier = 2);
   void TimeoutReset();
 
-  
   uint16_t GetLocalPort();
 
- private:
+private:
   int client_socket_;
   struct timeval default_timeout_ = {1, 0};
   struct timeval timeout_ = default_timeout_;
   int16_t maxPacketSize_ =
       2 + 2 +
-      512;  // the largest packet size in the TFTP protocol is 516 bytes: opcode
-            // (2 bytes) + block number (2 bytes) + data (512 bytes)
+      512; // the largest packet size in the TFTP protocol is 516 bytes: opcode
+           // (2 bytes) + block number (2 bytes) + data (512 bytes)
 };
 
-#endif  // UdpClient_h
+#endif // UdpClient_h

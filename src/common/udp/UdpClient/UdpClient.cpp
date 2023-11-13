@@ -1,9 +1,18 @@
 #include "UdpClient.h"
-
 UdpClient::UdpClient() {
   // create a socket
   if ((client_socket_ = socket(AF_INET, SOCK_DGRAM, 0)) <= 0) {
     throw UdpException("Error: Failed to create socket");
+  }
+
+  // set socket to non-blocking mode
+  int flags = fcntl(client_socket_, F_GETFL, 0);
+  if (flags == -1) {
+    throw UdpException("Error getting socket flags");
+  }
+
+  if (fcntl(client_socket_, F_SETFL, flags | O_NONBLOCK) == -1) {
+    throw UdpException("Error setting non-blocking mode");
   }
 
   // set socket timeout
