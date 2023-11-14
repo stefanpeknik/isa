@@ -1,6 +1,8 @@
 #ifndef TftpServer_h
 #define TftpServer_h
 
+#include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <fstream>
 #include <future>
@@ -9,15 +11,13 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include <csignal>
 
 #include "../common/logger.h"
 #include "../common/udp/UdpServer/UdpServer.h"
 #include "ClientHandler.h"
-#include "sigint.h"
 
 class TftpServer {
- public:
+public:
   struct TftpServerArgs {
     int port = 0;
     std::string root_dirpath = "";
@@ -27,14 +27,14 @@ class TftpServer {
 
   void run();
 
- private:
+private:
   TftpServerArgs args_;
   UdpServer udp_server_;
 
   void StartCommsWithClient(std::string client_hostname, int client_port,
                             std::string root_dirpath,
-                            std::vector<uint8_t> intro_packet);
-
+                            std::vector<uint8_t> intro_packet,
+                            std::atomic<bool> *SIGINT_RECEIVED);
 };
 
-#endif  // TftpServer_h
+#endif // TftpServer_h

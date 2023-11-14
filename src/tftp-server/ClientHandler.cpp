@@ -1,12 +1,14 @@
 #include "ClientHandler.h"
 
 ClientHandler::ClientHandler(std::string hostname, int port,
-                             std::string root_dirpath)
-    : udp_client_(UdpClient()), root_dirpath_(root_dirpath) {
+                             std::string root_dirpath,
+                             std::atomic<bool> *SIGINT_RECEIVED)
+    : udp_client_(UdpClient()), root_dirpath_(root_dirpath),
+      SIGINT_RECEIVED_(SIGINT_RECEIVED) {
   // initialize the client address structure
   memset(&client_address_, 0, sizeof(client_address_));
 
-  client_address_.sin_family = AF_INET;  // IPv4
+  client_address_.sin_family = AF_INET; // IPv4
   // Set the IPv4 address directly
   inet_pton(AF_INET, hostname.c_str(), &client_address_.sin_addr);
   // set the port number
@@ -17,7 +19,7 @@ void ClientHandler::FollowOnIntroPacket(std::vector<uint8_t> intro_packet) {
   LogPotentialTftpPacket(client_address_, intro_packet);
   // Parse the intro packet
   TftpPacket::Opcode opcode_1;
-  try {  // try to get the opcode
+  try { // try to get the opcode
     opcode_1 = TftpPacket::GetOpcodeFromRaw(intro_packet);
   } catch (TFTPIllegalOperationError &e) {
     Logger::Log("Invalid opcode in intro packet\n");
@@ -26,11 +28,15 @@ void ClientHandler::FollowOnIntroPacket(std::vector<uint8_t> intro_packet) {
     udp_client_.Send(error.MakeRaw(), client_address_);
     throw;
   }
-  try {  // try to follow on the intro packet and handle TFTP errors
+  try { // try to follow on the intro packet and handle TFTP errors
     if (opcode_1 == TftpPacket::Opcode::RRQ) {
+      mode_ = Mode::RRQ;
       FollowOnRRQ(intro_packet);
     } else if (opcode_1 == TftpPacket::Opcode::WRQ) {
+      mode_ = Mode::WRQ;
       FollowOnWRQ(intro_packet);
+    } else {
+      throw TFTPIllegalOperationError("Expected RRQ or WRQ");
     }
   } catch (TFTPFileNotFoundError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND, e.what());
@@ -162,7 +168,7 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   bool last_packet_sent = false;
   // keep sending data packets until the file is completely sent
   while (!last_packet_sent) {
-    auto data = reader.ReadFile(blksize);  // read data from file
+    auto data = reader.ReadFile(blksize); // read data from file
     if (data.size() < blksize) {
       // last packet, set flag to true
       Logger::Log("sending last packet, data size is less than blksize: " +
@@ -183,7 +189,7 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
         udp_client_.Send(data_packet.MakeRaw(), client_address_);
         auto response_n = RecievePacketFromClient();
         auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
-        if (opcode_n == TftpPacket::Opcode::ACK) {  // ACK received
+        if (opcode_n == TftpPacket::Opcode::ACK) { // ACK received
           auto ack_n = AckPacket(response_n);
           if (ack_n.block_number == block_number) {
             // ACK received for the correct block number, increment block
@@ -193,8 +199,8 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
             ackReceived = true;
             block_number++;
           } else if (ack_n.block_number <=
-                     block_number) {  // ACK received for an old block
-                                      // number, try again
+                     block_number) { // ACK received for an old block
+                                     // number, try again
             Logger::Log("received ACK packet for block number " +
                         std::to_string(ack_n.block_number) +
                         ", expected block number " +
@@ -203,25 +209,25 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
             // increase timeout
             udp_client_.IncreaseTimeout();
 
-          } else {  // ACK received for a future block number, throw error
+          } else { // ACK received for a future block number, throw error
             throw TFTPIllegalOperationError(
                 "Expected ACK packet with block number " +
                 std::to_string(block_number) + ", got block number " +
                 std::to_string(ack_n.block_number));
           }
-        } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
+        } else if (opcode_n == TftpPacket::Opcode::ERROR) { // ERROR received
           auto error = ErrorPacket(response_n);
           throw RecievedErrorPacketException("Client responded with error: " +
                                              error.error_message);
         }
-      } catch (UdpTimeoutException &e) {  // timeout
+      } catch (UdpTimeoutException &e) { // timeout
         retries++;
         // increase timeout
         udp_client_.IncreaseTimeout();
       }
     }
     if (retries >= MAX_RETRIES &&
-        !last_packet_sent) {  // timed out before sending last packet
+        !last_packet_sent) { // timed out before sending last packet
       throw TFTPIllegalOperationError("Error: Timeout");
     }
     // if last packet was sent, we don't need to wait for an ACK and can simply
@@ -287,7 +293,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
       // get data
       auto response_n = RecievePacketFromClient();
       auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
-      if (opcode_n == TftpPacket::Opcode::DATA) {  // DATA received
+      if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
         auto data_n = DataPacket(response_n);
         if (data_n.block_number == block_number) {
           // DATA received for the correct block number, increment block
@@ -312,8 +318,8 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
             last_packet_received = true;
           }
         } else if (data_n.block_number <=
-                   block_number) {  // DATA received for an old block
-                                    // number, try again
+                   block_number) { // DATA received for an old block
+                                   // number, try again
           Logger::Log("received DATA packet with block number " +
                       std::to_string(data_n.block_number) +
                       ", expected block number " +
@@ -321,13 +327,13 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
           retries++;
           // increase timeout
           udp_client_.IncreaseTimeout();
-        } else {  // DATA received for a future block number, throw error
+        } else { // DATA received for a future block number, throw error
           throw TFTPIllegalOperationError(
               "Expected DATA packet with block number " +
               std::to_string(block_number + 1) + ", got block number " +
               std::to_string(data_n.block_number));
         }
-      } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
+      } else if (opcode_n == TftpPacket::Opcode::ERROR) { // ERROR received
         auto error = ErrorPacket(response_n);
         throw RecievedErrorPacketException("Client responded with error: " +
                                            error.error_message);
@@ -357,7 +363,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
         // receive DATA packet
         auto response_n = RecievePacketFromClient();
         TftpPacket::Opcode opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
-        if (opcode_n == TftpPacket::Opcode::DATA) {  // DATA received
+        if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
           auto data_n = DataPacket(response_n);
           if (data_n.block_number == block_number + 1) {
             // DATA received for the correct block number, increment block
@@ -391,14 +397,14 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
                 std::to_string(block_number + 1) + ", got block number " +
                 std::to_string(data_n.block_number));
           }
-        } else if (opcode_n == TftpPacket::Opcode::ERROR) {  // ERROR received
+        } else if (opcode_n == TftpPacket::Opcode::ERROR) { // ERROR received
           Logger::Log("received ERROR packet");
           auto error = ErrorPacket(response_n);
           throw RecievedErrorPacketException("Server responded with error: " +
                                              error.error_message);
         }
         // try again
-      } catch (UdpTimeoutException &e) {  // timeout
+      } catch (UdpTimeoutException &e) { // timeout
         retries++;
         udp_client_.IncreaseTimeout();
         if (retries >= MAX_RETRIES) {
@@ -421,36 +427,48 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
   // end here
 }
 
-std::vector<Option> ClientHandler::NegotiateOptions(
-    std::vector<Option> options) {
+std::vector<Option>
+ClientHandler::NegotiateOptions(std::vector<Option> options) {
   std::vector<Option> negotiated_options;
   for (auto option : options) {
     switch (option.name) {
-      case Option::Name::BLKSIZE:
-        udp_client_.ChangeMaxPacketSize(stoi(option.value));
-        negotiated_options.push_back(option);
-        break;
-      case Option::Name::TIMEOUT:
-        udp_client_.ChangeTimeout({stoi(option.value), 0});
-        negotiated_options.push_back(option);
-        break;
-      case Option::Name::TSIZE:
-        // has to be implemented outside of this function
-        negotiated_options.push_back(option);
-        break;
-      case Option::Name::UNSUPPORTED:  // ignore
-        break;
+    case Option::Name::BLKSIZE:
+      udp_client_.ChangeMaxPacketSize(stoi(option.value));
+      negotiated_options.push_back(option);
+      break;
+    case Option::Name::TIMEOUT:
+      udp_client_.ChangeTimeout({stoi(option.value), 0});
+      negotiated_options.push_back(option);
+      break;
+    case Option::Name::TSIZE:
+      // has to be implemented outside of this function
+      negotiated_options.push_back(option);
+      break;
+    case Option::Name::UNSUPPORTED: // ignore
+      break;
     }
   }
   return negotiated_options;
 }
 
 void ClientHandler::CheckForSigint() {
-  if (SIGINT_RECEIVED.load() == false) return;
+  if ((*SIGINT_RECEIVED_).load() == false)
+    return;
 
   Logger::Log("SIGINT received, exiting");
-  // TODO 
-  
+
+  if (mode_ == Mode::RRQ) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
+                             "SIGINT received, exiting");
+    udp_client_.Send(error.MakeRaw(), client_address_);
+  } else if (mode_ == Mode::WRQ) {
+    auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
+                             "SIGINT received, exiting");
+    udp_client_.Send(error.MakeRaw(), client_address_);
+    
+  }
+
+  exit(0);
 }
 
 std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
@@ -486,7 +504,7 @@ std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
   }
 
   if (retries >= MAX_RETRIES) {
-    throw UdpTimeoutException();  // TODO
+    throw UdpTimeoutException(); // TODO
   }
 
   // Log the received packet if it is a valid TFTP packet

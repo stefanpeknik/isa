@@ -5,16 +5,6 @@ UdpClient::UdpClient() {
     throw UdpException("Error: Failed to create socket");
   }
 
-  // set socket to non-blocking mode
-  int flags = fcntl(client_socket_, F_GETFL, 0);
-  if (flags == -1) {
-    throw UdpException("Error getting socket flags");
-  }
-
-  if (fcntl(client_socket_, F_SETFL, flags | O_NONBLOCK) == -1) {
-    throw UdpException("Error setting non-blocking mode");
-  }
-
   // set socket timeout
   ChangeTimeout(default_timeout_);
 }
@@ -28,7 +18,7 @@ UdpClient::~UdpClient() {
 void UdpClient::Send(std::vector<uint8_t> data, sockaddr_in reciever_address) {
   // Sending the data
   sendto(client_socket_, data.data(), data.size(), 0,
-             (struct sockaddr *)&reciever_address, sizeof(reciever_address));
+         (struct sockaddr *)&reciever_address, sizeof(reciever_address));
 }
 
 std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {
@@ -42,6 +32,7 @@ std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {
   ssize_t bytes_received =
       recvfrom(client_socket_, buffer.data(), buffer.size(), 0,
                (struct sockaddr *)sender_address, &senderlen);
+  printf("bytes_received: %d\n", bytes_received);
   if (bytes_received < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       // Handle the timeout
