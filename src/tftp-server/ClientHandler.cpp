@@ -463,14 +463,33 @@ void ClientHandler::CheckForSigintWRQ(Writer *writer) {
   auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
                            "User interrupted transfer");
   udp_client_.Send(error.MakeRaw(), client_address_);
+  auto path = writer->GetFilepath();
+  // destructor closes file
+  writer->~Writer();
   // delete file
-  writer->DeleteFile(writer.);
+  FileHandler::DeleteFile(path);
+
+  exit(EXIT_FAILURE);
 }
 
-void ClientHandler
+void ClientHandler::CheckForSigintRRQ(Reader *reader) {
+  if (SIGINT_RECEIVED.load() == false)
+    return;
+  Logger::Log("SIGINT received, terminating transfer");
+  // send error packet
+  auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
+                           "User interrupted transfer");
+  udp_client_.Send(error.MakeRaw(), client_address_);
+  auto path = reader->GetFilepath();
+  // destructor closes file
+  reader->~Reader();
+  // delete file
+  FileHandler::DeleteFile(path);
 
-    std::vector<uint8_t>
-    ClientHandler::RecievePacketFromClient() {
+  exit(EXIT_FAILURE);
+}
+
+std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
   std::vector<uint8_t> buffer;
 
   // Create a unique_ptr to a sockaddr_in object to store the sender's
@@ -481,9 +500,10 @@ void ClientHandler
   buffer = udp_client_.Receive(sender_address.get());
 
   int retries = 0;
-  // TODO : check ip as well
-  while (sender_address->sin_port != client_address_.sin_port &&
-         retries < MAX_RETRIES) {
+  while ((sender_address->sin_addr.s_addr !=
+              client_address_.sin_addr.s_addr ||                   // ip
+          sender_address->sin_port != client_address_.sin_port) && // port
+         retries < MAX_RETRIES) {                                  // retries
     // Keep receiving data until the sender's port matches the client's
     // port or the number of retries exceeds the maximum number of retries
 
@@ -504,7 +524,7 @@ void ClientHandler
   }
 
   if (retries >= MAX_RETRIES) {
-    throw UdpTimeoutException(); // TODO
+    throw UdpTimeoutException();
   }
 
   // Log the received packet if it is a valid TFTP packet

@@ -2,7 +2,6 @@
 
 TftpServer::TftpServer(TftpServerArgs args)
     : args_(args), udp_server_(UdpServer(args.port)) {
-
   // Set up the SIGINT handler
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
@@ -20,10 +19,17 @@ void TftpServer::run() {
     std::vector<uint8_t> data;
     struct sockaddr_in sender_address;
     // Wait for a packet to arrive
-    while (!udp_server_.Receive(data, sender_address)) {
-      if (SIGINT_RECEIVED.load() == true)
-        break; // If SIGINT was received while waiting, break out of the loop
+    try {
+      while (!udp_server_.Receive(data, sender_address)) {
+        if (SIGINT_RECEIVED.load() == true)
+          break; // If SIGINT was received while waiting, break out of the
+                 // receiving loop
+      }
+    } catch (UdpSigintException &e) {
     }
+    if (SIGINT_RECEIVED.load() == true)
+      break; // If SIGINT was received while waiting, break out of the loop
+
     std::string client_hostname = inet_ntoa(sender_address.sin_addr);
     int client_port = ntohs(sender_address.sin_port);
 

@@ -13,24 +13,34 @@ TftpClient::TftpClient(TftpClientArgs args)
   // initialize the server address structure
   memset(&server_address_, 0, sizeof(server_address_));
 
-  server_address_.sin_family = AF_INET;  // IPv4
+  server_address_.sin_family = AF_INET; // IPv4
   // copy the server address to the server_address structure
   memcpy((char *)&server_address_.sin_addr.s_addr, (char *)server->h_addr,
          server->h_length);
   // set the port number
   server_address_.sin_port = htons(args.port);
+
+  // Set up the SIGINT handler
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = SigintHandler;
+  sigaction(SIGINT, &sa, NULL);
+
+  // remove SA_RESTART from the SIGINT handler
+  sa.sa_flags &= ~SA_RESTART;
+  sigaction(SIGINT, &sa, NULL);
 }
 
 void TftpClient::run() {
   Logger::Log("TFTP client started\n");
   try {
     switch (args_.mode) {
-      case TftpClientArgs::TftpMode::READ:
-        Read();
-        break;
-      case TftpClientArgs::TftpMode::WRITE:
-        Write();
-        break;
+    case TftpClientArgs::TftpMode::READ:
+      Read();
+      break;
+    case TftpClientArgs::TftpMode::WRITE:
+      Write();
+      break;
     }
   } catch (TFTPFileNotFoundError &e) {
     auto error = ErrorPacket(ErrorPacket::ErrorCode::FILE_NOT_FOUND, e.what());
@@ -76,14 +86,14 @@ void TftpClient::SetupUdpClient() {
   Option *timeout_ext = NULL;
   for (auto &option : args_.options) {
     switch (option.name) {
-      case Option::Name::BLKSIZE:
-        blksize_ext = &option;
-        break;
-      case Option::Name::TIMEOUT:
-        timeout_ext = &option;
-        break;
-      default:
-        break;
+    case Option::Name::BLKSIZE:
+      blksize_ext = &option;
+      break;
+    case Option::Name::TIMEOUT:
+      timeout_ext = &option;
+      break;
+    default:
+      break;
     }
   }
   if (blksize_ext && timeout_ext) {
@@ -131,7 +141,7 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
   }
 
   if (retries >= MAX_RETRIES) {
-    throw UdpTimeoutException();  // TODO
+    throw UdpTimeoutException();
   }
 
   // Log the received packet if it is a valid TFTP packet

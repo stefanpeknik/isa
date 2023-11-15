@@ -37,7 +37,6 @@ std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {
   ssize_t bytes_received =
       recvfrom(client_socket_, buffer.data(), buffer.size(), 0,
                (struct sockaddr *)sender_address, &senderlen);
-  printf("bytes_received: %d\n", bytes_received);
   if (bytes_received < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       // Handle the timeout
