@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "../common/logger.h"
+#include "../common/sigint.h"
 #include "../common/udp/UdpServer/UdpServer.h"
 #include "ClientHandler.h"
 
@@ -33,8 +34,7 @@ private:
 
   void StartCommsWithClient(std::string client_hostname, int client_port,
                             std::string root_dirpath,
-                            std::vector<uint8_t> intro_packet,
-                            std::atomic<bool> *SIGINT_RECEIVED);
+                            std::vector<uint8_t> intro_packet);
 };
 
 #endif // TftpServer_h

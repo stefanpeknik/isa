@@ -7,12 +7,12 @@
 #include "../common/IO/IO.h"
 #include "../common/TftpCommon.h"
 #include "../common/logger.h"
+#include "../common/sigint.h"
 #include "../common/udp/UdpClient/UdpClient.h"
 
 class ClientHandler {
 public:
-  ClientHandler(std::string hostname, int port, std::string root_dirpath,
-                std::atomic<bool> *SIGINT_RECEIVED);
+  ClientHandler(std::string hostname, int port, std::string root_dirpath);
 
   void FollowOnIntroPacket(std::vector<uint8_t> intro_packet);
 
@@ -22,10 +22,6 @@ private:
   UdpClient udp_client_;
   struct sockaddr_in client_address_;
   std::string root_dirpath_;
-  std::atomic<bool> *SIGINT_RECEIVED_;
-
-  enum Mode { RRQ, WRQ };
-  Mode mode_;
 
   void FollowOnRRQ(std::vector<uint8_t> intro_packet);
   void FollowOnWRQ(std::vector<uint8_t> intro_packet);
@@ -34,7 +30,9 @@ private:
 
   std::vector<Option> NegotiateOptions(std::vector<Option> options);
 
-  void CheckForSigint();
+  void CheckForSigintWRQ(Writer *writer);
+
+  void CheckForSigintRRQ(Reader *reader);
 
   void LogPotentialTftpPacket(struct sockaddr_in sender_address,
                               std::vector<uint8_t> buffer);

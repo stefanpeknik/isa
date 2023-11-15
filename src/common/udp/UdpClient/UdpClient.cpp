@@ -28,6 +28,11 @@ std::vector<uint8_t> UdpClient::Receive(sockaddr_in *sender_address) {
   // Capturing the sender's address and port
   socklen_t senderlen = sizeof(*sender_address);
 
+  // if SIGINT was received before receiving, throw an exception
+  if (SIGINT_RECEIVED.load() == true) {
+    throw UdpSigintException();
+  }
+
   // Receiving the data and capturing sender's address and port
   ssize_t bytes_received =
       recvfrom(client_socket_, buffer.data(), buffer.size(), 0,

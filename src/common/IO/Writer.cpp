@@ -26,6 +26,8 @@ void Writer::OpenFile() {
   }
 }
 
+std::string Writer::GetFilepath() { return filepath_; }
+
 void Writer::WriteFile(std::vector<uint8_t> data) {
   if (!file_.is_open()) { // If the file is not open, open it
     OpenFile();

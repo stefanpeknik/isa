@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "../../sigint.h"
 #include "../UdpCommon.h"
 
 class UdpClient {

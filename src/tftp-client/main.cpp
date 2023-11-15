@@ -5,7 +5,7 @@
 #include "TftpClient.h"
 
 long unsigned int FILEPATH_MAX_LENGTH =
-    500;  // to fit in default max packet size of 516 bytes
+    500; // to fit in default max packet size of 516 bytes
 
 void PrintUsageAndExit() {
   std::cout
@@ -80,7 +80,8 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 }
 
 // TODO : check if there is enough space for file to be read
-// TODO : handle ctrl+c
+// TODO : handle ctrl+c ( check for exceptions from udp client ) delete files if
+// the transmision is stopped...
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);

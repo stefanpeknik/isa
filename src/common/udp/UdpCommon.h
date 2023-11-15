@@ -5,18 +5,23 @@
 #include <string>
 
 class UdpException : public std::exception {
- public:
+public:
   UdpException(const std::string &message) : message(message) {}
 
   const char *what() const noexcept override { return message.c_str(); }
 
- private:
+private:
   std::string message;
 };
 
 class UdpTimeoutException : public UdpException {
- public:
+public:
   UdpTimeoutException() : UdpException("Error: Timeout") {}
 };
 
-#endif  // UdpCommon_h
+class UdpSigintException : public UdpException {
+public:
+  UdpSigintException() : UdpException("Error: SIGINT") {}
+};
+
+#endif // UdpCommon_h

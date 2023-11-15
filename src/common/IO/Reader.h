@@ -4,14 +4,15 @@
 #include "FileHandler.h"
 
 class Reader : public FileHandler {
- public:
+public:
   Reader(std::string filepath, DataFormat mode);
   ~Reader();
 
   void OpenFile();
   std::vector<uint8_t> ReadFile(unsigned int num_bytes);
+  std::string GetFilepath();
 
- private:
+private:
   std::string filepath_;
   std::fstream file_;
   DataFormat mode_;
@@ -19,4 +20,4 @@ class Reader : public FileHandler {
   // buffer for when ReadFile() shall return more bytes than requested
   std::vector<uint8_t> overflow_buffer_ = {};
 };
-#endif  // Reader_h
+#endif // Reader_h

@@ -1,10 +1,8 @@
 #include "ClientHandler.h"
 
 ClientHandler::ClientHandler(std::string hostname, int port,
-                             std::string root_dirpath,
-                             std::atomic<bool> *SIGINT_RECEIVED)
-    : udp_client_(UdpClient()), root_dirpath_(root_dirpath),
-      SIGINT_RECEIVED_(SIGINT_RECEIVED) {
+                             std::string root_dirpath)
+    : udp_client_(UdpClient()), root_dirpath_(root_dirpath) {
   // initialize the client address structure
   memset(&client_address_, 0, sizeof(client_address_));
 
@@ -30,10 +28,8 @@ void ClientHandler::FollowOnIntroPacket(std::vector<uint8_t> intro_packet) {
   }
   try { // try to follow on the intro packet and handle TFTP errors
     if (opcode_1 == TftpPacket::Opcode::RRQ) {
-      mode_ = Mode::RRQ;
       FollowOnRRQ(intro_packet);
     } else if (opcode_1 == TftpPacket::Opcode::WRQ) {
-      mode_ = Mode::WRQ;
       FollowOnWRQ(intro_packet);
     } else {
       throw TFTPIllegalOperationError("Expected RRQ or WRQ");
@@ -155,6 +151,8 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
       } catch (UdpTimeoutException &e) {
         retries++;
         udp_client_.IncreaseTimeout();
+      } catch (UdpSigintException &e) {
+        CheckForSigintRRQ(&reader);
       }
     }
     if (retries >= MAX_RETRIES) {
@@ -224,6 +222,8 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
         retries++;
         // increase timeout
         udp_client_.IncreaseTimeout();
+      } catch (UdpSigintException &e) {
+        CheckForSigintRRQ(&reader);
       }
     }
     if (retries >= MAX_RETRIES &&
@@ -341,6 +341,8 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
     } catch (UdpTimeoutException &e) {
       retries++;
       udp_client_.IncreaseTimeout();
+    } catch (UdpSigintException &e) {
+      CheckForSigintWRQ(&writer);
     }
   }
   if (retries >= MAX_RETRIES) {
@@ -410,6 +412,8 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
         if (retries >= MAX_RETRIES) {
           throw TFTPIllegalOperationError("Error: Timeout");
         }
+      } catch (UdpSigintException &e) {
+        CheckForSigintWRQ(&writer);
       }
     }
     if (retries >= MAX_RETRIES) {
@@ -451,27 +455,22 @@ ClientHandler::NegotiateOptions(std::vector<Option> options) {
   return negotiated_options;
 }
 
-void ClientHandler::CheckForSigint() {
-  if ((*SIGINT_RECEIVED_).load() == false)
+void ClientHandler::CheckForSigintWRQ(Writer *writer) {
+  if (SIGINT_RECEIVED.load() == false)
     return;
-
-  Logger::Log("SIGINT received, exiting");
-
-  if (mode_ == Mode::RRQ) {
-    auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
-                             "SIGINT received, exiting");
-    udp_client_.Send(error.MakeRaw(), client_address_);
-  } else if (mode_ == Mode::WRQ) {
-    auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
-                             "SIGINT received, exiting");
-    udp_client_.Send(error.MakeRaw(), client_address_);
-    
-  }
-
-  exit(0);
+  Logger::Log("SIGINT received, terminating transfer");
+  // send error packet
+  auto error = ErrorPacket(ErrorPacket::ErrorCode::NOT_DEFINED,
+                           "User interrupted transfer");
+  udp_client_.Send(error.MakeRaw(), client_address_);
+  // delete file
+  writer->DeleteFile(writer.);
 }
 
-std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
+void ClientHandler
+
+    std::vector<uint8_t>
+    ClientHandler::RecievePacketFromClient() {
   std::vector<uint8_t> buffer;
 
   // Create a unique_ptr to a sockaddr_in object to store the sender's
@@ -482,6 +481,7 @@ std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {
   buffer = udp_client_.Receive(sender_address.get());
 
   int retries = 0;
+  // TODO : check ip as well
   while (sender_address->sin_port != client_address_.sin_port &&
          retries < MAX_RETRIES) {
     // Keep receiving data until the sender's port matches the client's

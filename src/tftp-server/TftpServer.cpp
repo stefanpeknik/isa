@@ -1,9 +1,5 @@
 #include "TftpServer.h"
 
-std::atomic<bool> SIGINT_RECEIVED(false);
-
-void SigintHandler(int signal) { SIGINT_RECEIVED.store(true); }
-
 TftpServer::TftpServer(TftpServerArgs args)
     : args_(args), udp_server_(UdpServer(args.port)) {
 
@@ -33,18 +29,16 @@ void TftpServer::run() {
 
     auto client_handler =
         std::async(std::launch::async, &TftpServer::StartCommsWithClient, this,
-                   client_hostname, client_port, args_.root_dirpath, data,
-                   &SIGINT_RECEIVED);
+                   client_hostname, client_port, args_.root_dirpath, data);
   }
 }
 
 void TftpServer::StartCommsWithClient(std::string client_hostname,
                                       int client_port, std::string root_dirpath,
-                                      std::vector<uint8_t> intro_packet,
-                                      std::atomic<bool> *SIGINT_RECEIVED) {
+                                      std::vector<uint8_t> intro_packet) {
   try {
-    auto client_handler = ClientHandler(client_hostname, client_port,
-                                        root_dirpath, SIGINT_RECEIVED);
+    auto client_handler =
+        ClientHandler(client_hostname, client_port, root_dirpath);
     client_handler.FollowOnIntroPacket(intro_packet);
   } catch (const std::exception &e) {
     Logger::Log(e.what());

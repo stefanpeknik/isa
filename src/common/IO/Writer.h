@@ -10,6 +10,7 @@ public:
 
   void OpenFile();
   void WriteFile(std::vector<uint8_t> data);
+  void std::string GetFilepath();
 
 private:
   std::string filepath_;

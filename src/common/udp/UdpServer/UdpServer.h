@@ -14,10 +14,11 @@
 #include <string>
 #include <vector>
 
+#include "../../sigint.h"
 #include "../UdpCommon.h"
 
 class UdpServer {
- public:
+public:
   UdpServer(int port_number);
   ~UdpServer();
 
@@ -25,12 +26,12 @@ class UdpServer {
   void ChangeTimeout(struct timeval timeout);
   void ChangeMaxPacketSize(uint16_t maxPacketSize);
 
- private:
+private:
   int server_socket_;
   int port_number_;
   struct sockaddr_in server_address_;
   socklen_t sender_address_len;
-  int16_t maxPacketSize_ = 1024; // 
+  int16_t maxPacketSize_ = 1024; //
 };
 
-#endif  // UdpServer_h
+#endif // UdpServer_h
