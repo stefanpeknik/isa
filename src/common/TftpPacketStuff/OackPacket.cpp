@@ -5,8 +5,16 @@ OackPacket::OackPacket(std::vector<Option> options)
 
 OackPacket::OackPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
-  this->options =
-      ParseOptions(std::vector<uint8_t>(raw.begin() + 2, raw.end()));
+  if (raw.size() < 2) {
+    throw TFTPIllegalOperationError("Invalid OACK packet");
+  }
+  try {
+    this->options =
+        ParseOptions(std::vector<uint8_t>(raw.begin() + 2, raw.end()));
+  } catch (OptionException &e) {
+    throw TFTPIllegalOperationError("TFTP Illegal Operation: " +
+                                    std::string(e.what()));
+  }
 }
 
 std::vector<Option> OackPacket::ParseOptions(std::vector<uint8_t> options) {

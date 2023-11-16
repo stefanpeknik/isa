@@ -15,10 +15,8 @@
 #include "./TftpPacketStuff/ReadWritePacket.h"
 
 class Logger {
- public:
-  static void Log(std::string message) {
-    // std::cout << message << std::endl;
-  }
+public:
+  static void Log(std::string message) { std::cout << message << std::endl; }
 
   static void Log(std::string where, std::string message) {
     std::cout << where << ": " << message << std::endl;
@@ -92,4 +90,4 @@ class Logger {
   }
 };
 
-#endif  // Logger_h
+#endif // Logger_h

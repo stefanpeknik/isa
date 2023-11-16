@@ -14,6 +14,7 @@ TftpServer::TftpServer(TftpServerArgs args)
 }
 
 void TftpServer::run() {
+  std::vector<std::thread> client_threads;
 
   while (SIGINT_RECEIVED.load() == false) {
     std::vector<uint8_t> data;
@@ -33,9 +34,14 @@ void TftpServer::run() {
     std::string client_hostname = inet_ntoa(sender_address.sin_addr);
     int client_port = ntohs(sender_address.sin_port);
 
-    auto client_handler =
-        std::async(std::launch::async, &TftpServer::StartCommsWithClient, this,
-                   client_hostname, client_port, args_.root_dirpath, data);
+    client_threads.push_back(std::thread(&TftpServer::StartCommsWithClient,
+                                         this, client_hostname, client_port,
+                                         args_.root_dirpath, data));
+  }
+  if (SIGINT_RECEIVED.load() == true) {
+    for (std::thread &thread : client_threads) {
+      pthread_kill(thread.native_handle(), SIGUSR1);
+    }
   }
 }
 

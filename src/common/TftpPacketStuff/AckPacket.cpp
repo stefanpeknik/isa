@@ -5,6 +5,9 @@ AckPacket::AckPacket(uint16_t block_number)
 
 AckPacket::AckPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
+  if (raw.size() < 5) {
+    throw TFTPIllegalOperationError("Invalid ACK packet");
+  }
   this->block_number =
       ParseBlockNumber(std::vector<uint8_t>(raw.begin() + 2, raw.begin() + 4));
 }

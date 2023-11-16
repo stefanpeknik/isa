@@ -5,7 +5,6 @@
 #include <csignal>
 #include <cstdint>
 #include <fstream>
-#include <future>
 #include <iostream>
 #include <memory>
 #include <string>

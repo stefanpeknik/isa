@@ -27,8 +27,13 @@ ReadWritePacket::ReadWritePacket(std::vector<uint8_t> raw)
 
   if (modeEnd != raw.end() - 1) {
     // Parse options
-    this->options = ReadWritePacket::ParseOptions(
-        std::vector<uint8_t>(modeEnd + 1, raw.end()));
+    try {
+      this->options = ReadWritePacket::ParseOptions(
+          std::vector<uint8_t>(modeEnd + 1, raw.end()));
+    } catch (OptionException &e) {
+      throw TFTPIllegalOperationError("TFTP Illegal Operation: " +
+                                      std::string(e.what()));
+    }
   }
 }
 
@@ -47,8 +52,8 @@ ReadWritePacket::Mode ReadWritePacket::ParseMode(std::vector<uint8_t> mode) {
   }
 }
 
-std::vector<Option> ReadWritePacket::ParseOptions(
-    std::vector<uint8_t> options) {
+std::vector<Option>
+ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
   std::vector<Option> parsed_options = {};
 
   for (size_t i = 0; i < options.size();) {
@@ -62,7 +67,7 @@ std::vector<Option> ReadWritePacket::ParseOptions(
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option name not terminated with null byte");
     }
-    i++;  // Skip null byte
+    i++; // Skip null byte
 
     // Read option value
     std::string option_value;
@@ -74,7 +79,7 @@ std::vector<Option> ReadWritePacket::ParseOptions(
       throw TFTPIllegalOperationError(
           "TFTP Illegal Operation: option value not terminated with null byte");
     }
-    i++;  // Skip null byte
+    i++; // Skip null byte
 
     // Check if option value is missing
     if (option_value.empty()) {
@@ -104,8 +109,8 @@ std::string ReadWritePacket::ParseOptionName(std::vector<uint8_t> option_name) {
   return std::string(option_name.begin(), option_name.end());
 }
 
-std::string ReadWritePacket::ParseOptionValue(
-    std::vector<uint8_t> option_value) {
+std::string
+ReadWritePacket::ParseOptionValue(std::vector<uint8_t> option_value) {
   return std::string(option_value.begin(), option_value.end());
 }
 
@@ -136,7 +141,7 @@ std::vector<uint8_t> ReadWritePacket::MakeRaw() {
 std::string ReadWritePacket::ModeToString() {
   if (mode == ReadWritePacket::Mode::NETASCII) {
     return "netascii";
-  }  // else if (mode == ReadWritePacket::Mode::OCTET) {
+  } // else if (mode == ReadWritePacket::Mode::OCTET) {
   return "octet";
   // }
 }

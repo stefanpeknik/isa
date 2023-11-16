@@ -13,6 +13,9 @@ const int MAX_BLOCK_SIZE = 65464;
 const int MIN_TIMEOUT = 1;
 const int MAX_TIMEOUT = 255;
 
+// tsize limits
+const uintmax_t MIN_TSIZE = 0;
+
 Option::Option(std::string name, std::string value) {
   // to lower case
   std::transform(name.begin(), name.end(), name.begin(),
@@ -53,7 +56,7 @@ Option::Option(std::string name, std::string value) {
 
   case Name::TIMEOUT:
     try {
-      int timeout = std::stoi(value);
+      auto timeout = std::stoll(value);
       if (timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT) {
         // Valid timeout value
       } else {
@@ -68,9 +71,13 @@ Option::Option(std::string name, std::string value) {
 
   case Name::TSIZE:
     try {
-      // uintmax_t tsize =
-      std::stoull(value);
-      // Valid tsize value
+      uintmax_t tsize = std::stoull(value);
+      if (tsize >= MIN_TSIZE) {
+        // Valid tsize value
+      } else {
+        // Invalid tsize value
+        throw InvalidOptionValueException("TSIZE", value);
+      }
     } catch (const std::invalid_argument &e) {
       // Invalid format, not an integer
       throw InvalidOptionValueException("TSIZE", value);
