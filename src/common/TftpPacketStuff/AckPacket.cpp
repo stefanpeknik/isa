@@ -5,7 +5,10 @@ AckPacket::AckPacket(uint16_t block_number)
 
 AckPacket::AckPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
-  if (raw.size() < 5) {
+  if (opcode != TftpPacket::Opcode::ACK) {
+    throw TFTPIllegalOperationError("Invalid opcode for AckPacket");
+  }
+  if (raw.size() < 4) {
     throw TFTPIllegalOperationError("Invalid ACK packet");
   }
   this->block_number =

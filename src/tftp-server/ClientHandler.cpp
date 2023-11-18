@@ -94,12 +94,8 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   // update io handler to use the requested
   // negotiate options
   auto negotiated_options = NegotiateOptions(rrq.options);
-  uint16_t blksize = 512;
-  // if 'blksize' option is specified, set blksize to the value of 'blksize'
-  // option
   for (auto option : negotiated_options) {
-    if (option.name == Option::Name::BLKSIZE) {
-      blksize = stoi(option.value);
+    if (option.name == Option::Name::TSIZE) {
     }
   }
   // if 'tsize' option is specified, read the file to get its size
@@ -108,9 +104,9 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
       Reader reader_for_tsize(real_path, read_mode);
       auto bytes_read = 0;
       do {
-        auto data = reader_for_tsize.ReadFile(blksize);
+        auto data = reader_for_tsize.ReadFile(blksize_);
         bytes_read += data.size();
-      } while (bytes_read == blksize);
+      } while (bytes_read == blksize_);
       option.value = std::to_string(bytes_read);
       // Reader destructor closes the file
     }
@@ -166,25 +162,26 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   bool last_packet_sent = false;
   // keep sending data packets until the file is completely sent
   while (!last_packet_sent) {
-    auto data = reader.ReadFile(blksize); // read data from file
-    if (data.size() < blksize) {
+    auto data = reader.ReadFile(blksize_); // read data from file
+    if ((int)data.size() < blksize_) {
       // last packet, set flag to true
       Logger::Log("sending last packet, data size is less than blksize: " +
                   std::to_string(data.size()) + " < " +
-                  std::to_string(blksize));
+                  std::to_string(blksize_));
       last_packet_sent = true;
     }
     // keep sending DATA packets until an ACK packet with the correct block
     // number is received or retry limit is reached
     int retries = 0;
     bool ackReceived = false;
+    // create and send DATA packet (must be before loop because sorcerer's
+    // apprenctice bug)
+    auto data_packet = DataPacket(block_number, data, blksize_);
+    Logger::Log("sending DATA packet with block number " +
+                std::to_string(block_number));
+    udp_client_.Send(data_packet.MakeRaw(), client_address_);
     while (!ackReceived && retries < MAX_RETRIES) {
       try {
-        // create and send DATA packet
-        auto data_packet = DataPacket(block_number, data);
-        Logger::Log("sending DATA packet with block number " +
-                    std::to_string(block_number));
-        udp_client_.Send(data_packet.MakeRaw(), client_address_);
         auto response_n = RecievePacketFromClient();
         auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
         if (opcode_n == TftpPacket::Opcode::ACK) { // ACK received
@@ -260,16 +257,15 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
   auto negotiated_options = NegotiateOptions(wrq.options);
 
   int block_number = 1;
-  uint16_t blksize = 512;
   int retries = 0;
   bool dataReceived = false;
   bool last_packet_received = false;
 
-  // if 'blksize' option is specified, set blksize to the value of 'blksize'
-  // option
   for (auto option : negotiated_options) {
-    if (option.name == Option::Name::BLKSIZE) {
-      blksize = stoi(option.value);
+    if (option.name == Option::Name::TSIZE) {
+      if (!FileHandler::HasEnoughSpace(root_dirpath_, this->tsize_)) {
+        throw NotEnoughSpaceException();
+      }
     }
   }
 
@@ -294,7 +290,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
       auto response_n = RecievePacketFromClient();
       auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
       if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
-        auto data_n = DataPacket(response_n);
+        auto data_n = DataPacket(response_n, blksize_);
         if (data_n.block_number == block_number) {
           // DATA received for the correct block number, increment block
           // number
@@ -309,12 +305,12 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
           } catch (FailedToOpenFileException &e) {
             throw TFTPAccessViolationError();
           }
-          if (data_n.data.size() < blksize) {
+          if ((int)data_n.data.size() < blksize_) {
             // last packet, set flag to true
             Logger::Log(
                 "received last packet, data size is less than blksize: " +
                 std::to_string(data_n.data.size()) + " < " +
-                std::to_string(blksize));
+                std::to_string(blksize_));
             last_packet_received = true;
           }
         } else if (data_n.block_number <=
@@ -366,7 +362,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
         auto response_n = RecievePacketFromClient();
         TftpPacket::Opcode opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
         if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
-          auto data_n = DataPacket(response_n);
+          auto data_n = DataPacket(response_n, blksize_);
           if (data_n.block_number == block_number + 1) {
             // DATA received for the correct block number, increment block
             // number
@@ -383,7 +379,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
               throw TFTPAccessViolationError();
             }
             // check if this is the last DATA packet
-            if (data_n.data.size() < blksize) {
+            if ((int)data_n.data.size() < blksize_) {
               // last packet, set flag to true
               last_packet_received = true;
             }
@@ -437,15 +433,17 @@ ClientHandler::NegotiateOptions(std::vector<Option> options) {
   for (auto option : options) {
     switch (option.name) {
     case Option::Name::BLKSIZE:
-      udp_client_.ChangeMaxPacketSize(stoi(option.value));
+      this->blksize_ = stoi(option.value);
       negotiated_options.push_back(option);
       break;
     case Option::Name::TIMEOUT:
-      udp_client_.ChangeTimeout({stoi(option.value), 0});
+      this->timeout_ = {stoi(option.value), 0};
+      udp_client_.ChangeTimeout(this->timeout_);
       negotiated_options.push_back(option);
       break;
     case Option::Name::TSIZE:
       // has to be implemented outside of this function
+      this->tsize_ = stoi(option.value);
       negotiated_options.push_back(option);
       break;
     case Option::Name::UNSUPPORTED: // ignore
@@ -544,7 +542,7 @@ void ClientHandler::LogPotentialTftpPacket(struct sockaddr_in sender_address,
       Logger::logWRQ(sender_address, ReadWritePacket(buffer));
     } else if (opcode == TftpPacket::Opcode::DATA) {
       Logger::logDATA(sender_address, udp_client_.GetLocalPort(),
-                      DataPacket(buffer));
+                      DataPacket(buffer, blksize_));
     } else if (opcode == TftpPacket::Opcode::ACK) {
       Logger::logACK(sender_address, AckPacket(buffer));
     } else if (opcode == TftpPacket::Opcode::ERROR) {

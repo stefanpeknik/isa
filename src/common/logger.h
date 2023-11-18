@@ -30,9 +30,10 @@ public:
     std::cout << std::endl;
   }
 
+  // RRQ {SRC_IP}:{SRC_PORT} "{FILEPATH}" {MODE} {$OPTS}
+  // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
   static void LogRRQ(struct sockaddr_in src_address, ReadWritePacket rrq) {
-    // RRQ {SRC_IP}:{SRC_PORT} "{FILEPATH}" {MODE} {$OPTS}
-    // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
+
     std::cout << "RRQ " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port) << " \"" << rrq.filepath << "\" "
               << rrq.ModeToString();
@@ -42,9 +43,9 @@ public:
     std::cout << std::endl;
   }
 
+  // WRQ {SRC_IP}:{SRC_PORT} "{FILEPATH}" {MODE} {$OPTS}
+  // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
   static void logWRQ(struct sockaddr_in src_address, ReadWritePacket wrq) {
-    // WRQ {SRC_IP}:{SRC_PORT} "{FILEPATH}" {MODE} {$OPTS}
-    // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
     std::cout << "WRQ " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port) << " \"" << wrq.filepath << "\" "
               << wrq.ModeToString();
@@ -54,16 +55,16 @@ public:
     std::cout << std::endl;
   }
 
+  // ACK {SRC_IP}:{SRC_PORT} {BLOCK_ID}
   static void logACK(struct sockaddr_in src_address, AckPacket ack) {
-    // ACK {SRC_IP}:{SRC_PORT} {BLOCK_ID}
     std::cout << "ACK " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port) << " " << ack.block_number
               << std::endl;
   }
 
+  // OACK {SRC_IP}:{SRC_PORT} {$OPTS}
+  // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
   static void logOACK(struct sockaddr_in src_address, OackPacket oack) {
-    // OACK {SRC_IP}:{SRC_PORT} {$OPTS}
-    // {$OPTS} = {OPT1_NAME}={OPT1_VALUE} ... {OPTn_NAME}={OPTn_VALUE}
     std::cout << "OACK " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port);
     for (auto option : oack.options) {
@@ -72,17 +73,17 @@ public:
     std::cout << std::endl;
   }
 
+  // DATA {SRC_IP}:{SRC_PORT}:{DST_PORT} {BLOCK_ID}
   static void logDATA(struct sockaddr_in src_address, int dst_port,
                       DataPacket data) {
-    // DATA {SRC_IP}:{SRC_PORT}:{DST_PORT} {BLOCK_ID}
     std::cout << "DATA " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port) << ":" << dst_port << " "
               << data.block_number << std::endl;
   }
 
+  // ERROR {SRC_IP}:{SRC_PORT}:{DST_PORT} {CODE} "{MESSAGE}"
   static void logERROR(struct sockaddr_in src_address, int dst_port,
                        ErrorPacket error) {
-    // ERROR {SRC_IP}:{SRC_PORT}:{DST_PORT} {CODE} "{MESSAGE}"
     std::cout << "ERROR " << inet_ntoa(src_address.sin_addr) << ":"
               << ntohs(src_address.sin_port) << ":" << dst_port << " "
               << int(error.error_code) << " \"" << error.error_message << "\""

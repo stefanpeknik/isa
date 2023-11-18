@@ -6,6 +6,9 @@ ErrorPacket::ErrorPacket(ErrorCode error_code, std::string error_message)
 
 ErrorPacket::ErrorPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
+  if (opcode != TftpPacket::Opcode::ERROR) {
+    throw TFTPIllegalOperationError("Invalid opcode for ErrorPacket");
+  }
   if (raw.size() < 5) {
     throw TFTPIllegalOperationError("Invalid ERROR packet");
   }

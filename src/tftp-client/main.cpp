@@ -1,6 +1,8 @@
+#include "../common/TftpPacketStuff/TftpCommon.h"
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "TftpClient.h"
 
@@ -21,37 +23,47 @@ void PrintUsageAndExit() {
   exit(EXIT_FAILURE);
 }
 
-TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
-  TftpClient::TftpClientArgs args;
+// TODO : fix error codes for options
+// if unsupported option is received
+// TODO : netascii must end with \r\n
+
+int main(int argc, char *argv[]) {
+  std::string hostname;
+  int port;
+  std::string filepath = "";
+  std::string dest_filepath;
+  ReadWritePacket::Mode file_mode = ReadWritePacket::Mode::OCTET; // hardcoded
+  TftpClient::TftpClientArgs::TftpMode mode;
+  std::vector<Option> options = {};
+
   int i = 1;
   while (i < argc) {
     std::string arg = argv[i];
     if (arg == "-h") {
       i++;
       if (i < argc) {
-        args.hostname = argv[i];
+        hostname = argv[i];
       } else {
         PrintUsageAndExit();
       }
     } else if (arg == "-p") {
       i++;
       if (i < argc) {
-        args.port = std::atoi(argv[i]);
+        port = std::atoi(argv[i]);
       } else {
         PrintUsageAndExit();
       }
     } else if (arg == "-f") {
       i++;
       if (i < argc) {
-        args.filepath = argv[i];
+        filepath = argv[i];
       } else {
         PrintUsageAndExit();
       }
     } else if (arg == "-t") {
       i++;
       if (i < argc) {
-        args.dest_filepath = argv[i];
-        args.mode = TftpClient::TftpClientArgs::TftpMode::READ;
+        dest_filepath = argv[i];
       } else {
         PrintUsageAndExit();
       }
@@ -59,41 +71,31 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
     i++;
   }
 
-  if (args.hostname.empty() || args.dest_filepath.empty()) {
+  if (hostname.empty() || dest_filepath.empty()) {
     PrintUsageAndExit();
   }
 
+  // If filepath is not specified, Write
+  if (filepath.empty()) {
+    if (filepath.length() > FILEPATH_MAX_LENGTH) {
+      std::cerr << "Error: Filepath is too long" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    mode = TftpClient::TftpClientArgs::TftpMode::WRITE;
+  } else {
+    mode = TftpClient::TftpClientArgs::TftpMode::READ;
+  }
+
   // If port is not specified, use default port for TFTP
-  if (args.port == 0) {
-    args.port = 69;
+  if (port == 0) {
+    port = 69;
   }
 
-  // If filepath is not specified, read from stdin
-  if (args.filepath.empty()) {
-    args.mode = TftpClient::TftpClientArgs::TftpMode::WRITE;
-  } else if (args.filepath.length() > FILEPATH_MAX_LENGTH) {
-    std::cerr << "Error: Filepath is too long" << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  return args;
-}
-
-// TODO : check if there is enough space for file to be read
-// TODO : fix error codes for options
-// TODO : check for duplicit options
-// TODO : support options with no name and/or no value
-// TODO : ignore repeating packets from previous transfer
-// TODO : server cant modify timeout option value
-
-int main(int argc, char *argv[]) {
-  auto args = ParseCommandLine(argc, argv);
-
-  args.options = {Option("timeout", "10")};
+  options = {Option("timeout", "10")};
   // args.options = {};
 
-  auto client = TftpClient(args);
-
+  auto client = TftpClient(TftpClient::TftpClientArgs{
+      hostname, port, filepath, dest_filepath, mode, file_mode, options});
   try {
     client.run();
   } catch (std::exception &e) {

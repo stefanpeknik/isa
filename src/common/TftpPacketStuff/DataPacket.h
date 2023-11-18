@@ -5,8 +5,9 @@
 
 class DataPacket : public TftpPacket {
 public:
-  DataPacket(uint16_t block_number, std::vector<uint8_t> data);
-  DataPacket(std::vector<uint8_t> raw);
+  DataPacket(uint16_t block_number, std::vector<uint8_t> data,
+             int blksize = 512);
+  DataPacket(std::vector<uint8_t> raw, int blksize = 512);
   uint16_t block_number;
   std::vector<uint8_t> data;
 

@@ -31,7 +31,10 @@ private:
   int port_number_;
   struct sockaddr_in server_address_;
   socklen_t sender_address_len;
-  int16_t maxPacketSize_ = 1024; //
+  int16_t maxPacketSize_ = 65500; // 65507 is the maximum size of a UDP datagram
+                                  // (RFC 791), but we need to account for the
+                                  // IP header (20 bytes) and UDP header (8
+                                  // bytes) and leave some space just in case
 };
 
 #endif // UdpServer_h

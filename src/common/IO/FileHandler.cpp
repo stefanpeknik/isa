@@ -30,3 +30,7 @@ bool FileHandler::HasEnoughSpace(std::string path, uintmax_t requiredBytes) {
   // Check if there is enough space
   return availableBytes >= requiredBytes;
 }
+
+uintmax_t FileHandler::GetFileSize(std::string filepath) {
+  return std::filesystem::file_size(filepath);
+}

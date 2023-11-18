@@ -11,7 +11,7 @@
 #include "../utils/utils.h"
 
 class Option {
- public:
+public:
   enum class Name {
     BLKSIZE,
     TIMEOUT,
@@ -29,26 +29,26 @@ class Option {
 };
 
 class OptionException : public std::exception {
- public:
+public:
   OptionException(const std::string &message) : message(message) {}
 
   const char *what() const noexcept override { return message.c_str(); }
 
- private:
+private:
   std::string message;
 };
 
 class UnsupportedOptionException : public OptionException {
- public:
+public:
   UnsupportedOptionException() : OptionException("Unsupported option") {}
 };
 
 class InvalidOptionValueException : public OptionException {
- public:
+public:
   InvalidOptionValueException(const std::string &option_name,
                               const std::string &option_value)
       : OptionException("Invalid value for option " + option_name + ": " +
                         option_value) {}
 };
 
-#endif  // Option_H
+#endif // Option_H

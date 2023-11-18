@@ -11,8 +11,8 @@
 #include "TftpPacket.h"
 
 class ReadWritePacket : public TftpPacket {
- public:
-  enum class Mode { NETASCII, OCTET };  // mail is not supported
+public:
+  enum class Mode { NETASCII, OCTET }; // mail is not supported
 
   ReadWritePacket(TftpPacket::Opcode opcode, std::string filepath, Mode mode,
                   std::vector<Option> options = {});
@@ -32,4 +32,4 @@ class ReadWritePacket : public TftpPacket {
   std::string ModeToString();
 };
 
-#endif  // ReadWritePacket_H
+#endif // ReadWritePacket_H

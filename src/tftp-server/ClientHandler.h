@@ -5,7 +5,7 @@
 #include <csignal>
 
 #include "../common/IO/IO.h"
-#include "../common/TftpCommon.h"
+#include "../common/TftpPacketStuff/TftpCommon.h"
 #include "../common/logger.h"
 #include "../common/sigint.h"
 #include "../common/udp/UdpClient/UdpClient.h"
@@ -22,6 +22,10 @@ private:
   UdpClient udp_client_;
   struct sockaddr_in client_address_;
   std::string root_dirpath_;
+
+  int blksize_ = 512;
+  struct timeval timeout_ = {1, 0};
+  int tsize_ = 0;
 
   void FollowOnRRQ(std::vector<uint8_t> intro_packet);
   void FollowOnWRQ(std::vector<uint8_t> intro_packet);

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "../common/IO/IO.h"
-#include "../common/TftpCommon.h"
+#include "../common/TftpPacketStuff/TftpCommon.h"
 #include "../common/logger.h"
 #include "../common/sigint.h"
 #include "../common/udp/UdpClient/UdpClient.h"
@@ -40,6 +40,10 @@ private:
   TftpClientArgs args_;
   UdpClient udp_client_;
   struct sockaddr_in server_address_;
+
+  // define blksize
+  uint16_t blksize_ = 512;
+  struct timeval timeout_ = {1, 0};
 
   void Write();
   void Read();

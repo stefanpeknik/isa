@@ -7,8 +7,6 @@ void TftpClient::Read() {
                     ? DataFormat::OCTET
                     : DataFormat::NETASCII);
   CheckForSigintRRQ(&writer);
-  // define blksize
-  uint16_t blksize = 512;
   // bool to check if last packet was received
   bool last_packet_received = false;
   // declare block number
@@ -43,7 +41,7 @@ void TftpClient::Read() {
       // check if opcode is DATA, OACK, or ERROR
       if (opcode_1 == TftpPacket::Opcode::DATA) { // server responded with DATA
         Logger::Log("received DATA packet");
-        auto data = DataPacket(response_1);
+        auto data = DataPacket(response_1, blksize_);
         if (data.block_number != 1) {
           throw TFTPIllegalOperationError(
               "Expected DATA packet with block number 1, got "
@@ -58,7 +56,7 @@ void TftpClient::Read() {
         // set block number to 1
         block_number = 1;
         // if data size is less than 512 bytes, then this is the last packet
-        if (data.data.size() < blksize) {
+        if (data.data.size() < blksize_) {
           last_packet_received = true;
         }
         // write data to file
@@ -89,7 +87,7 @@ void TftpClient::Read() {
         for (auto option : args_.options) {
           if (option.name == Option::Name::TSIZE) {
             uintmax_t tsize = std::stoull(option.value);
-            if (!FileHandler::HasEnoughSpace("./", tsize)) {
+            if (!FileHandler::HasEnoughSpace(args_.dest_filepath, tsize)) {
               throw NotEnoughSpaceException();
             }
           }
@@ -128,7 +126,7 @@ void TftpClient::Read() {
   // option
   for (auto option : args_.options) {
     if (option.name == Option::Name::BLKSIZE) {
-      blksize = stoi(option.value);
+      blksize_ = stoi(option.value);
     }
   }
   CheckForSigintRRQ(&writer);
@@ -152,7 +150,7 @@ void TftpClient::Read() {
         auto response_n = RecievePacketFromServer();
         TftpPacket::Opcode opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
         if (opcode_n == TftpPacket::Opcode::DATA) { // DATA received
-          auto data_n = DataPacket(response_n);
+          auto data_n = DataPacket(response_n, blksize_);
           if (data_n.block_number == block_number + 1) {
             // DATA received for the correct block number, increment block
             // number
@@ -169,7 +167,7 @@ void TftpClient::Read() {
               throw TFTPAccessViolationError();
             }
             // check if this is the last DATA packet
-            if (data_n.data.size() < blksize) {
+            if (data_n.data.size() < blksize_) {
               // last packet, set flag to true
               last_packet_received = true;
             }

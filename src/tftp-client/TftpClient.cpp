@@ -2,6 +2,7 @@
 
 TftpClient::TftpClient(TftpClientArgs args)
     : args_(args), udp_client_(UdpClient()) {
+  Logger::Log("TFTP client created\n");
   SetupUdpClient();
 
   // get the server address
@@ -32,7 +33,6 @@ TftpClient::TftpClient(TftpClientArgs args)
 }
 
 void TftpClient::run() {
-  Logger::Log("TFTP client started\n");
   try {
     switch (args_.mode) {
     case TftpClientArgs::TftpMode::READ:
@@ -82,30 +82,18 @@ void TftpClient::run() {
 }
 
 void TftpClient::SetupUdpClient() {
-  Option *blksize_ext = NULL;
-  Option *timeout_ext = NULL;
   for (auto &option : args_.options) {
     switch (option.name) {
     case Option::Name::BLKSIZE:
-      blksize_ext = &option;
+      this->blksize_ = stoi(option.value);
       break;
     case Option::Name::TIMEOUT:
-      timeout_ext = &option;
+      this->timeout_.tv_sec = stoi(option.value);
+      udp_client_.ChangeTimeout(this->timeout_);
       break;
     default:
       break;
     }
-  }
-  if (blksize_ext && timeout_ext) {
-    udp_client_.ChangeTimeout({stoi(timeout_ext->value), 0});
-    udp_client_.ChangeMaxPacketSize(stoi(blksize_ext->value));
-
-  } else if (blksize_ext) {
-    udp_client_.ChangeTimeout({0, 0});
-    udp_client_.ChangeMaxPacketSize(stoi(blksize_ext->value));
-  } else if (timeout_ext) {
-    udp_client_.ChangeTimeout({stoi(timeout_ext->value), 0});
-    udp_client_.ChangeMaxPacketSize(512);
   }
 }
 
@@ -119,7 +107,9 @@ std::vector<uint8_t> TftpClient::RecievePacketFromServer() {
   buffer = udp_client_.Receive(sender_address.get());
 
   int retries = 0;
-  while (sender_address->sin_port != server_address_.sin_port &&
+  while ((sender_address->sin_addr.s_addr !=
+              server_address_.sin_addr.s_addr ||                   // ip
+          sender_address->sin_port != server_address_.sin_port) && // port
          retries < MAX_RETRIES) {
     // Keep receiving data until the sender's port matches the server's port or
     // the number of retries exceeds the maximum number of retries
@@ -161,7 +151,7 @@ void TftpClient::LogPotentialTftpPacket(struct sockaddr_in sender_address,
       Logger::logWRQ(sender_address, ReadWritePacket(buffer));
     } else if (opcode == TftpPacket::Opcode::DATA) {
       Logger::logDATA(sender_address, udp_client_.GetLocalPort(),
-                      DataPacket(buffer));
+                      DataPacket(buffer, blksize_));
     } else if (opcode == TftpPacket::Opcode::ACK) {
       Logger::logACK(sender_address, AckPacket(buffer));
     } else if (opcode == TftpPacket::Opcode::ERROR) {
@@ -199,9 +189,9 @@ void TftpClient::ValidateOptionsInOack(std::vector<Option> oack_options) {
           }
         }
         if (oack_option.name == Option::Name::TIMEOUT) {
-          if (stoi(oack_option.value) > stoi(client_option.value)) {
+          if (stoi(oack_option.value) != stoi(client_option.value)) {
             throw TFTPIllegalOperationError(
-                "Server responded with option 'timeout' with value higher "
+                "Server responded with option 'timeout' with value different "
                 "than client requested");
           }
         }

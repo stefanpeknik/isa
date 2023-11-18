@@ -11,6 +11,12 @@ ReadWritePacket::ReadWritePacket(TftpPacket::Opcode opcode,
 
 ReadWritePacket::ReadWritePacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
+  if (opcode != TftpPacket::Opcode::RRQ && opcode != TftpPacket::Opcode::WRQ) {
+    throw TFTPIllegalOperationError("Invalid opcode for Read or Write Packet");
+  }
+  if (raw.size() < 4) {
+    throw TFTPIllegalOperationError("Invalid Read or Write packet");
+  }
   // Parse filepath
   auto filepathEnd = std::find(raw.begin() + 2, raw.end(), '\0');
   if (filepathEnd == raw.end()) {
@@ -70,7 +76,7 @@ ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
     i++; // Skip null byte
 
     // Read option value
-    std::string option_value;
+    std::string option_value = "";
     while (i < options.size() && options[i] != '\0') {
       option_value += std::tolower(options[i]);
       i++;
@@ -80,12 +86,6 @@ ReadWritePacket::ParseOptions(std::vector<uint8_t> options) {
           "TFTP Illegal Operation: option value not terminated with null byte");
     }
     i++; // Skip null byte
-
-    // Check if option value is missing
-    if (option_value.empty()) {
-      throw TFTPIllegalOperationError(
-          "TFTP Illegal Operation: missing value for option " + option_name);
-    }
 
     // Create new Option object
     Option new_option(option_name, option_value);

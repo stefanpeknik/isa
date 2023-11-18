@@ -19,6 +19,7 @@ public:
   static bool isFilePathUnderDirectory(std::string filePath,
                                        std::string directoryPath);
   static bool HasEnoughSpace(std::string path, uintmax_t requiredBytes);
+  static uintmax_t GetFileSize(std::string filepath);
 };
 
 class FileHandlerException : public std::exception {

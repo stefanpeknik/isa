@@ -5,6 +5,9 @@ OackPacket::OackPacket(std::vector<Option> options)
 
 OackPacket::OackPacket(std::vector<uint8_t> raw)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
+  if (opcode != TftpPacket::Opcode::OACK) {
+    throw TFTPIllegalOperationError("Invalid opcode for OackPacket");
+  }
   if (raw.size() < 2) {
     throw TFTPIllegalOperationError("Invalid OACK packet");
   }

@@ -104,12 +104,11 @@ void TftpClient::SendData() {
   // blksize bytes (or 'blksize' option value if specified) of data is sent or
   // until the client receives an ERROR packet
   uint16_t block_number = 1;
-  uint16_t blksize = 512;
   // if 'blksize' option is specified, set blksize to the value of 'blksize'
   // option
   for (auto option : args_.options) {
     if (option.name == Option::Name::BLKSIZE) {
-      blksize = stoi(option.value);
+      blksize_ = stoi(option.value);
     }
   }
   // loop that will continue until the last DATA packet containing less than
@@ -120,11 +119,11 @@ void TftpClient::SendData() {
 
     std::vector<uint8_t> data;
     try {
-      data = std_handler.ReadBytesFromStdin(blksize);
+      data = std_handler.ReadBytesFromStdin(blksize_);
     } catch (FailedToReadFromStdinException &e) {
       throw TFTPUnknownError();
     }
-    if (data.size() < blksize) {
+    if (data.size() < blksize_) {
       // last packet, set flag to true
       last_packet_sent = true;
     }
@@ -132,15 +131,15 @@ void TftpClient::SendData() {
     // number is received or retry limit is reached
     int retries = 0;
     bool ackReceived = false;
+    // create and send DATA packet (must be before loop because sorcerer's
+    // apprenctice bug)
+    auto data_packet = DataPacket(block_number, data, blksize_);
+    Logger::Log("sending DATA packet with block number " +
+                std::to_string(block_number));
+    udp_client_.Send(data_packet.MakeRaw(), server_address_);
     while (!ackReceived && retries < MAX_RETRIES) {
       CheckForSigintWRQ();
-
       try {
-        // create and send DATA packet
-        auto data_packet = DataPacket(block_number, data);
-        Logger::Log("sending DATA packet with block number " +
-                    std::to_string(block_number));
-        udp_client_.Send(data_packet.MakeRaw(), server_address_);
         auto response_n = RecievePacketFromServer();
         auto opcode_n = TftpPacket::GetOpcodeFromRaw(response_n);
         if (opcode_n == TftpPacket::Opcode::ACK) { // ACK received
