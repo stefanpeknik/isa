@@ -80,6 +80,11 @@ TftpClient::TftpClientArgs ParseCommandLine(int argc, char *argv[]) {
 }
 
 // TODO : check if there is enough space for file to be read
+// TODO : fix error codes for options
+// TODO : check for duplicit options
+// TODO : support options with no name and/or no value
+// TODO : ignore repeating packets from previous transfer
+// TODO : server cant modify timeout option value
 
 int main(int argc, char *argv[]) {
   auto args = ParseCommandLine(argc, argv);
