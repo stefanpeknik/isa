@@ -83,7 +83,6 @@ void TftpClient::Read() {
         args_.options = oack.options;
         // if tsize option is specified, check if there is enough space for file
         // to be read
-        // TODO
         for (auto option : args_.options) {
           if (option.name == Option::Name::TSIZE) {
             uintmax_t tsize = std::stoull(option.value);
@@ -171,6 +170,7 @@ void TftpClient::Read() {
               // last packet, set flag to true
               last_packet_received = true;
             }
+            break;
           } else if (data_n.block_number < block_number + 1) {
             // DATA received for an old block number, try again
             Logger::Log("received DATA packet for an old block number");

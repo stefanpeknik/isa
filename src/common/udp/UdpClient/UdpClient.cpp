@@ -1,4 +1,5 @@
 #include "UdpClient.h"
+
 UdpClient::UdpClient() {
   // create a socket
   if ((client_socket_ = socket(AF_INET, SOCK_DGRAM, 0)) <= 0) {

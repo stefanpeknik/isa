@@ -103,6 +103,25 @@ std::vector<uint8_t> Reader::ReadFile(unsigned int num_bytes) {
     }
 
     buffer = FormatToNETASCII(buffer);
+    // if buffer len < num bytes to be read => we found EOF and we need to
+    // ensure that the last line
+    if (buffer.size() < num_bytes || // if buffer is smaller than the number of
+                                     // bytes requested => we found EOF
+        // if buffer is larger than the number of bytes requested and the last
+        // two characters are not '\r\n'
+        (buffer.size() >= 2 && (buffer[buffer.size() - 2] != '\r' ||
+                                buffer[buffer.size() - 1] != '\n'))) {
+      buffer.push_back('\r');
+      buffer.push_back('\n');
+    }
+    if (buffer.size() > num_bytes) { // if buffer is larger than the number of
+                                     // bytes requested
+      overflow_buffer_ = std::vector<uint8_t>(
+          buffer.begin() + num_bytes,
+          buffer.end());        // put the extra data in the overflow buffer
+      buffer.resize(num_bytes); // resize buffer to the number of bytes
+                                // requested
+    }
   } else { // flat read data from file
     std::vector<uint8_t> data(num_bytes);
     file_.read(reinterpret_cast<char *>(data.data()), num_bytes);

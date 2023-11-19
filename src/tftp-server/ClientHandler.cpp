@@ -94,10 +94,6 @@ void ClientHandler::FollowOnRRQ(std::vector<uint8_t> intro_packet) {
   // update io handler to use the requested
   // negotiate options
   auto negotiated_options = NegotiateOptions(rrq.options);
-  for (auto option : negotiated_options) {
-    if (option.name == Option::Name::TSIZE) {
-    }
-  }
   // if 'tsize' option is specified, read the file to get its size
   for (auto option : negotiated_options) {
     if (option.name == Option::Name::TSIZE) {
@@ -383,6 +379,7 @@ void ClientHandler::FollowOnWRQ(std::vector<uint8_t> intro_packet) {
               // last packet, set flag to true
               last_packet_received = true;
             }
+            break;
           } else if (data_n.block_number < block_number + 1) {
             // DATA received for an old block number, try again
             Logger::Log("received DATA packet for an old block number");

@@ -20,8 +20,7 @@ TftpPacket::Opcode TftpPacket::ParseOpcode(std::vector<uint8_t> opcode) {
   } else if (opcode[0] == 0x00 && opcode[1] == 0x06) {
     return Opcode::OACK;
   } else {
-    throw TFTPIllegalOperationError("Invalid opcode: " +
-                                    std::string(opcode.begin(), opcode.end()));
+    throw TFTPIllegalOperationError("Invalid opcode");
   }
 }
 

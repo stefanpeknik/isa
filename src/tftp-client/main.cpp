@@ -23,9 +23,6 @@ void PrintUsageAndExit() {
   exit(EXIT_FAILURE);
 }
 
-// TODO : netascii must end with \r\n
-// TODO : from netascii back to normal
-
 int main(int argc, char *argv[]) {
   std::string hostname;
   int port;
@@ -90,7 +87,7 @@ int main(int argc, char *argv[]) {
     port = 69;
   }
 
-  options = {Option("timeout", "10")};
+  options = {Option("timeout", "255")};
   // args.options = {};
 
   auto client = TftpClient(TftpClient::TftpClientArgs{

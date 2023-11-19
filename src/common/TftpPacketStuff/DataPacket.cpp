@@ -3,7 +3,7 @@
 DataPacket::DataPacket(uint16_t block_number, std::vector<uint8_t> data,
                        int blksize)
     : TftpPacket(TftpPacket::Opcode::DATA), block_number(block_number),
-      data(std::vector<uint8_t>(data.begin(), data.begin() + blksize)) {}
+      data(std::vector<uint8_t>(data.begin(), data.begin())) {}
 
 DataPacket::DataPacket(std::vector<uint8_t> raw, int blksize)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {
@@ -13,7 +13,10 @@ DataPacket::DataPacket(std::vector<uint8_t> raw, int blksize)
   if (raw.size() < 4) {
     throw TFTPIllegalOperationError("Invalid DATA packet");
   }
-  raw.resize(2 + 2 + blksize); // opcode + blknum + blksize
+  if (raw.size() >
+      (long unsigned int)(2 + 2 + blksize)) { // opcode + blknum + blksize
+    raw.resize(2 + 2 + blksize);
+  }
   this->block_number =
       ParseBlockNumber(std::vector<uint8_t>(raw.begin() + 2, raw.begin() + 4));
   this->data = ParseData(std::vector<uint8_t>(raw.begin() + 4, raw.end()));

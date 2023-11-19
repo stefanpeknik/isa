@@ -23,7 +23,7 @@ UdpServer::~UdpServer() { close(server_socket_); }
 bool UdpServer::Receive(std::vector<uint8_t> &data,
                         struct sockaddr_in &sender_address) {
   socklen_t sender_address_len = sizeof(sender_address);
-  data = std::vector<uint8_t>(maxPacketSize_); // Max packet size is 65468 bytes
+  data = std::vector<uint8_t>(maxPacketSize_);
   if (SIGINT_RECEIVED.load() == true)
     return false; // If SIGINT was received before receiving, return false
   ssize_t bytes_received =
