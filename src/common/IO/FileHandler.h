@@ -12,6 +12,8 @@
 
 class FileHandler {
 public:
+  virtual ~FileHandler() = default;
+
   virtual void OpenFile() = 0;
 
   static bool FileExists(std::string filepath);

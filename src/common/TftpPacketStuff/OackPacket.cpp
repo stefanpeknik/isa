@@ -14,9 +14,8 @@ OackPacket::OackPacket(std::vector<uint8_t> raw)
   try {
     this->options =
         ParseOptions(std::vector<uint8_t>(raw.begin() + 2, raw.end()));
-  } catch (OptionException &e) {
-    throw TFTPIllegalOperationError("TFTP Illegal Operation: " +
-                                    std::string(e.what()));
+  } catch (InvalidOptionValueException &e) {
+      throw TTFOptionNegotiationError();
   }
 }
 

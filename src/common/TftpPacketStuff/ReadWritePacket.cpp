@@ -1,5 +1,7 @@
 #include "ReadWritePacket.h"
 
+uint16_t MAX_REQUEST_LENGTH = 512;
+
 ReadWritePacket::ReadWritePacket(TftpPacket::Opcode opcode,
                                  std::string filepath, Mode mode,
                                  std::vector<Option> options)
@@ -16,6 +18,9 @@ ReadWritePacket::ReadWritePacket(std::vector<uint8_t> raw)
   }
   if (raw.size() < 4) {
     throw TFTPIllegalOperationError("Invalid Read or Write packet");
+  }
+  if (raw.size() > MAX_REQUEST_LENGTH) {
+    raw.resize(MAX_REQUEST_LENGTH);
   }
   // Parse filepath
   auto filepathEnd = std::find(raw.begin() + 2, raw.end(), '\0');
@@ -36,9 +41,8 @@ ReadWritePacket::ReadWritePacket(std::vector<uint8_t> raw)
     try {
       this->options = ReadWritePacket::ParseOptions(
           std::vector<uint8_t>(modeEnd + 1, raw.end()));
-    } catch (OptionException &e) {
-      throw TFTPIllegalOperationError("TFTP Illegal Operation: " +
-                                      std::string(e.what()));
+    } catch (InvalidOptionValueException &e) {
+      throw TTFOptionNegotiationError();
     }
   }
 }

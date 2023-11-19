@@ -38,7 +38,7 @@ private:
   int client_socket_;
   struct timeval default_timeout_ = {1, 0};
   struct timeval timeout_ = default_timeout_;
-  int16_t maxPacketSize_ = 65500; // 65507 is the maximum size of a UDP datagram
+  uint16_t maxPacketSize_ = 65500; // 65507 is the maximum size of a UDP datagram
                                   // (RFC 791), but we need to account for the
                                   // IP header (20 bytes) and UDP header (8
                                   // bytes) and leave some space just in case

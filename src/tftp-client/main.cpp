@@ -23,9 +23,8 @@ void PrintUsageAndExit() {
   exit(EXIT_FAILURE);
 }
 
-// TODO : fix error codes for options
-// if unsupported option is received
 // TODO : netascii must end with \r\n
+// TODO : from netascii back to normal
 
 int main(int argc, char *argv[]) {
   std::string hostname;

@@ -39,6 +39,7 @@ void Writer::WriteFile(std::vector<uint8_t> data) {
     tbw_later_buffer_.clear();
   }
 
+  // TODO : should de-netascii here
   if (mode_ == DataFormat::NETASCII) {
     data = FormatToNETASCII(data);
     // if the last char is '\r', dont write it yet and instead wait for next
