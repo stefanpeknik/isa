@@ -28,4 +28,7 @@ $(SERVER_EXEC): $(SERVER_OBJS)
 clean:
 	rm -f $(CLIENT_EXEC) $(SERVER_EXEC) $(CLIENT_OBJS) $(SERVER_OBJS)
 
-.PHONY: all clean
+pack:
+	tar -cvf xpekni01.tar 
+
+.PHONY: all clean pack
