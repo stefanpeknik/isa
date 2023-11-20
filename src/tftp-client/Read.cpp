@@ -1,3 +1,8 @@
+/**
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
+
 #include "TftpClient.h"
 
 void TftpClient::Read() {

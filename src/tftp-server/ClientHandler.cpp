@@ -1,3 +1,8 @@
+/**
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
+
 #include "ClientHandler.h"
 
 ClientHandler::ClientHandler(std::string hostname, int port,
@@ -464,7 +469,7 @@ void ClientHandler::CheckForSigintWRQ(Writer *writer) {
   // delete file
   FileHandler::DeleteFile(path);
 
-  exit(EXIT_FAILURE);
+  std::terminate();
 }
 
 void ClientHandler::CheckForSigintRRQ(Reader *reader) {
@@ -481,7 +486,7 @@ void ClientHandler::CheckForSigintRRQ(Reader *reader) {
   // delete file
   FileHandler::DeleteFile(path);
 
-  exit(EXIT_FAILURE);
+  std::terminate();
 }
 
 std::vector<uint8_t> ClientHandler::RecievePacketFromClient() {

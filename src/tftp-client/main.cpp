@@ -1,3 +1,8 @@
+/**
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
+
 #include "../common/TftpPacketStuff/TftpCommon.h"
 #include <cstdlib>
 #include <iostream>
@@ -25,7 +30,7 @@ void PrintUsageAndExit() {
 
 int main(int argc, char *argv[]) {
   std::string hostname;
-  int port;
+  int port = -1;
   std::string filepath = "";
   std::string dest_filepath;
   ReadWritePacket::Mode file_mode = ReadWritePacket::Mode::OCTET; // hardcoded
@@ -83,12 +88,12 @@ int main(int argc, char *argv[]) {
   }
 
   // If port is not specified, use default port for TFTP
-  if (port == 0) {
+  if (port == -1) {
     port = 69;
   }
 
   options = {Option("timeout", "255")};
-  // args.options = {};
+  // options = {};
 
   auto client = TftpClient(TftpClient::TftpClientArgs{
       hostname, port, filepath, dest_filepath, mode, file_mode, options});

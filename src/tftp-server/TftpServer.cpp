@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "TftpServer.h"
 
 TftpServer::TftpServer(TftpServerArgs args)
@@ -43,6 +48,11 @@ void TftpServer::run() {
       pthread_kill(thread.native_handle(), SIGUSR1);
     }
   }
+  for (std::thread &thread : client_threads) { // Wait for all threads to finish
+    thread.join();
+  }
+
+  Logger::Log("Server stopped");
 }
 
 void TftpServer::StartCommsWithClient(std::string client_hostname,
