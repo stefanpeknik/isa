@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #ifndef Utils_H
 #define Utils_H
 

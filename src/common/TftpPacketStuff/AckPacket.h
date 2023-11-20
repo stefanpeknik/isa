@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #ifndef AckPacket_h
 #define AckPacket_h
 

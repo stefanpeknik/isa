@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #ifndef Writer_h
 #define Writer_h
 

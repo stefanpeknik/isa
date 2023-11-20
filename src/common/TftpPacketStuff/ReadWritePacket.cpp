@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "ReadWritePacket.h"
 
 uint16_t MAX_REQUEST_LENGTH = 512;

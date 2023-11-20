@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "OackPacket.h"
 
 OackPacket::OackPacket(std::vector<Option> options)

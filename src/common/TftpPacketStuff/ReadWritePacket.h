@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #ifndef ReadWritePacket_H
 #define ReadWritePacket_H
 

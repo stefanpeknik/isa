@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "Reader.h"
 
 Reader::Reader(std::string filepath, DataFormat mode)

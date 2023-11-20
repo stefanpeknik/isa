@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #ifndef ErrorPacket_h
 #define ErrorPacket_h
 

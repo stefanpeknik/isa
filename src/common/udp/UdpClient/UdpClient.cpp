@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "UdpClient.h"
 
 UdpClient::UdpClient() {

@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "StdHandler.h"
 
 StdHandler::StdHandler(DataFormat mode) : mode_(mode) {}

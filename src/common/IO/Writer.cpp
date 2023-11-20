@@ -1,3 +1,8 @@
+/**
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
+
 #include "Writer.h"
 
 Writer::Writer(std::string filepath, DataFormat mode)

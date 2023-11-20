@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "ErrorPacket.h"
 
 ErrorPacket::ErrorPacket(ErrorCode error_code, std::string error_message)

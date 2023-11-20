@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "FileHandler.h"
 
 bool FileHandler::FileExists(std::string filepath) {

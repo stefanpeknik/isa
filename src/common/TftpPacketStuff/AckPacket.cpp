@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "AckPacket.h"
 
 AckPacket::AckPacket(uint16_t block_number)

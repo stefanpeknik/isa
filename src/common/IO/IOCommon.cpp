@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "IOCommon.h"
 
 std::vector<uint8_t> FormatToNETASCII(std::vector<uint8_t> data) {

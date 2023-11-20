@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "TftpPacket.h"
 
 TftpPacket::TftpPacket(std::vector<uint8_t> opcode) {

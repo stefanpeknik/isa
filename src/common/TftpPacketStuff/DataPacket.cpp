@@ -1,9 +1,14 @@
+/**
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
+
 #include "DataPacket.h"
 
 DataPacket::DataPacket(uint16_t block_number, std::vector<uint8_t> data,
                        int blksize)
     : TftpPacket(TftpPacket::Opcode::DATA), block_number(block_number),
-      data(std::vector<uint8_t>(data.begin(), data.begin())) {}
+      data(std::vector<uint8_t>(data.begin(), data.end())) {}
 
 DataPacket::DataPacket(std::vector<uint8_t> raw, int blksize)
     : TftpPacket(TftpPacket::GetOpcodeFromRaw(raw)) {

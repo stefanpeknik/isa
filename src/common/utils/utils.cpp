@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "utils.h"
 
 std::vector<uint8_t> StringToVectorNullTerminated(std::string str) {

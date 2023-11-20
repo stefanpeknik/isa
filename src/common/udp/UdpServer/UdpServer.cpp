@@ -1,3 +1,8 @@
+/**
+* Author: Stefan Peknik
+* Mail: xpekni01@vutbr.cz
+*/
+
 #include "UdpServer.h"
 
 UdpServer::UdpServer(int port_number) {
