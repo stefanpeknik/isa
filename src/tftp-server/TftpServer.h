@@ -1,7 +1,7 @@
 /**
-* Author: Stefan Peknik
-* Mail: xpekni01@vutbr.cz
-*/
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
 
 #ifndef TftpServer_h
 #define TftpServer_h
@@ -24,7 +24,7 @@
 class TftpServer {
 public:
   struct TftpServerArgs {
-    int port = 0;
+    int port = 69;
     std::string root_dirpath = "";
   };
 

@@ -1,7 +1,7 @@
 /**
-* Author: Stefan Peknik
-* Mail: xpekni01@vutbr.cz
-*/
+ * Author: Stefan Peknik
+ * Mail: xpekni01@vutbr.cz
+ */
 
 #include <cstdlib>
 #include <iostream>
@@ -21,7 +21,8 @@ void PrintUsageAndExit() {
 }
 
 TftpServer::TftpServerArgs ParseCommandLine(int argc, char *argv[]) {
-  if (argc != 4) PrintUsageAndExit();
+  if (argc < 3 || argc > 4)
+    PrintUsageAndExit();
   TftpServer::TftpServerArgs args;
   int i = 1;
   while (i < argc) {
@@ -38,6 +39,10 @@ TftpServer::TftpServerArgs ParseCommandLine(int argc, char *argv[]) {
     }
     i++;
   }
+
+  if (args.root_dirpath.empty())
+    PrintUsageAndExit();
+
   return args;
 }
 

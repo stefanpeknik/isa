@@ -55,6 +55,8 @@ tftp-client -h hostname [-p port] [-f filepath] -t dest_filepath
 - -f: Path to the file to download (stdin used for upload).
 - -t: Destination path on the remote server or locally.
 
+
+
 ### TFTP Server
 
 The server waits for incoming packets, processes them in separate threads, and handles client communication.
@@ -68,6 +70,8 @@ tftp-server [-p port] root_dirpath
 - -p: Local port for incoming connections.
 - root_dirpath: Path to the root directory for storing incoming files.
 
+
+
 ### Known Limitations
 
 - Maximum file size: Limited by the two-byte block number in TFTP packets.
@@ -76,4 +80,12 @@ tftp-server [-p port] root_dirpath
 - File operations: No support for renaming or deleting files on the server.
 - For more information, consult the relevant RFCs (1350, 2347, 2348, 2349), and the source code for implementation details.
 
-### List Of Files
+### Implementation graphs
+
+#### Client
+
+![Graph of include dependencies of TFTP Client](./graphs/client_graph.png)
+
+#### Server
+
+![Graph of include dependencies of TFTP Server](./graphs/client_graph.png)
